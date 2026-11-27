@@ -205,33 +205,15 @@
       bottom: calc(3% + env(safe-area-inset-bottom));
     }
 
-    /* 画面ペロペロ（lick）：通常サイズから始まり、画面ギリギリ手前までズームアップして戻る */
+    /* 画面ペロペロ（lick）：ズームアップや移動をやめて他のモーションと同じ普通の表示に統一 */
     .marron-canvas.is-licking {
-      left: 50%;
+      left: 60%;
       bottom: calc(6% + env(safe-area-inset-bottom));
       width: auto;
-      height: 55vh;
-      transform-origin: center 52%;
-      z-index: 8;
-      animation: lickZoomEdge 10s cubic-bezier(0.22, 0.85, 0.36, 1) forwards;
-    }
-
-    @keyframes lickZoomEdge {
-      0%, 22% {
-        left: 50%;
-        bottom: calc(6% + env(safe-area-inset-bottom));
-        transform: translateX(-50%) scale(1);
-      }
-      45%, 74% {
-        left: 50%;
-        bottom: 1vh;
-        transform: translateX(-50%) scale(2.05);
-      }
-      92%, 100% {
-        left: 50%;
-        bottom: calc(6% + env(safe-area-inset-bottom));
-        transform: translateX(-50%) scale(1);
-      }
+      height: 49vh;
+      transform: translateX(-50%);
+      transform-origin: center bottom;
+      z-index: 4;
     }
 
     /* ミッドナイト（ベッド）時はカーペット中央に配置 */
@@ -707,17 +689,15 @@
           ]
         },
         lick: {
-          src: "assets/marron_lick.mp4",
+          src: "assets/marron_lick_2.mp4",
           loop: false,
           lines: [
             "わーい！ペロペロ〜！（近い近い！）",
             "大好きだワン！ペロッ♪",
-            "ぐいーっと近づいちゃうよ〜！ペロペロ！",
-            "えへへ、画面いっぱいペロペロだワン！"
+            "えへへ、ペロペロしちゃうよ〜！"
           ]
         }
       },
-      // 時間帯ごとの気まぐれセリフ
       timeLines: {
         morning: [
           "おはよ〜！朝の光が気持ちいいね",
@@ -744,7 +724,6 @@
           "静かな夜だね、無理しないで休んでね"
         ]
       },
-      // しばらく触らずに置いてあるときのさりげない見守りセリフ
       idleLines: [
         "じーっ…（そばで見守っているよ）",
         "ひと休みしたいときは、いつでも声をかけてね",
@@ -1075,13 +1054,8 @@
       const isTrot = motionKey === "trot";
       canvas.classList.toggle("is-sleeping", motionKey === "sleep");
       canvas.classList.toggle("is-licking", isLicking);
-      if (isLicking) {
-        canvas.style.animation = "none";
-        void canvas.offsetWidth;
-        canvas.style.animation = "";
-      }
       canvas.classList.toggle("is-trot", isTrot);
-      floorShadow.style.opacity = isLicking ? "0" : "1";
+      floorShadow.style.opacity = "1";
 
       video.loop = loopOverride !== null ? loopOverride : motion.loop;
       video.src = motion.src;

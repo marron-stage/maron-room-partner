@@ -161,12 +161,12 @@
       transition: opacity 0.8s ease;
     }
 
-    /* カーペットの中央にしっかり座る位置 */
+    /* 8の字散歩やペロペロの奥行きが映えるように横幅を広めに設定 */
     .marron-canvas {
       position: absolute;
       left: 60%;
-      bottom: calc(6% + env(safe-area-inset-bottom));
-      width: min(21vw, 29vh, 210px);
+      bottom: calc(5% + env(safe-area-inset-bottom));
+      width: min(36vw, 48vh, 360px);
       height: auto;
       transform: translateX(-50%);
       transform-origin: center bottom;
@@ -295,10 +295,10 @@
       color: #fff3dc;
     }
 
-    /* しっぽ付きの可愛い吹き出しデザイン（マロンの頭より少し上のちょうどいい高さ） */
+    /* しっぽ付きの可愛い吹き出しデザイン */
     .reaction-bubble {
       position: absolute;
-      top: calc(43% + env(safe-area-inset-top));
+      top: calc(36% + env(safe-area-inset-top));
       left: 60%;
       transform: translateX(-50%) scale(0.88);
       background: var(--bubble-bg);
@@ -418,17 +418,36 @@
         midnight: { room: "assets/room_midnight.jpg", bgm: "assets/bgm_midnight.mp3" }
       },
       motions: {
-        sit:   { src: "assets/marron_sit.mp4",   loop: true,  lines: ["ここでまったりしてるよ〜", "じーっ…（こっちを見ている）"] },
-        down:  { src: "assets/marron_down.mp4",  loop: true,  lines: ["ちょっと伏せてのんびりしようっと", "カーペット気持ちいいな〜"] },
-        bark:  { src: "assets/marron_bark.mp4",  loop: false, lines: ["ワンワン！", "ワン！（こっち見てるよ！）"] },
-        sweet: { src: "assets/marron_sweet.mp4", loop: false, lines: ["クゥ〜ン…甘えさせて〜", "寂しいよぉ…もっと撫でて〜", "クゥン…そばにいてほしいワン…"] },
-        pet:   { src: "assets/marron_pet.mp4",   loop: true,  lines: ["なでなで気持ちいいな〜♪", "えへへ、もっと撫でて〜"] },
-        sleep: { src: "assets/marron_sleep.mp4", loop: true,  lines: ["すやすや…おやすみ〜…", "Zzz…夢の中だワン…"] }
+        // 基本の待機・リラックスポーズ（ループ）
+        sit:     { src: "assets/marron_sit.mp4",     loop: true,  lines: ["ここでまったりしてるよ〜", "じーっ…（こっちを見ている）"] },
+        down:    { src: "assets/marron_down.mp4",    loop: true,  lines: ["ちょっと伏せてのんびりしようっと", "カーペット気持ちいいな〜"] },
+        pet:     { src: "assets/marron_pet.mp4",     loop: true,  lines: ["なでなで気持ちいいな〜♪", "えへへ、もっと撫でて〜"] },
+        sleep:   { src: "assets/marron_sleep.mp4",   loop: true,  lines: ["すやすや…おやすみ〜…", "Zzz…夢の中だワン…"] },
+
+        // 気まぐれワンアクション（1回再生したら自動的に sit に戻る）
+        bark:    { src: "assets/marron_bark.mp4",    loop: false, lines: ["ワンワン！", "ワン！（こっち見てるよ！）"] },
+        sweet:   { src: "assets/marron_sweet.mp4",   loop: false, lines: ["クゥ〜ン…甘えさせて〜", "クゥン…そばにいてほしいワン…"] },
+        treat:   { src: "assets/marron_treat.mp4",   loop: false, lines: ["待て…よしっ！もぐもぐ美味しい〜！", "おやつ上手に食べられたよ♪"] },
+        spin:    { src: "assets/marron_spin.mp4",    loop: false, lines: ["あ！しっぽ発見！…うぅ、目が回る〜", "くるくる〜…ふらふらだワン…"] },
+        trot:    { src: "assets/marron_trot.mp4",    loop: false, lines: ["お部屋の中をトコトコお散歩〜♪", "ルンルン♪ 8の字ウォーキング！"] },
+        stretch: { src: "assets/marron_stretch.mp4", loop: false, lines: ["ふぁ〜あ…ぐーっと背伸び〜！", "う〜ん！伸びをしてリフレッシュ！"] },
+        trick:   { src: "assets/marron_trick.mp4",   loop: false, lines: ["お手！おかわり！…えへへ、お腹なでて〜♪", "特技を披露しちゃうワン！"] },
+        lick:    { src: "assets/marron_lick.mp4",    loop: false, lines: ["わーい！ペロペロ〜！（近い近い！）", "大好きだワン！ペロッ♪"] }
       }
     };
 
-    // 起きてる時間のランダム候補（sit, down, bark, sweet の4種のみ）
-    const AWAKE_RANDOM_MOTIONS = ["sit", "down", "bark", "sweet"];
+    // 「基本 sit で、たまに気まぐれワンアクションが出る」候補リスト
+    const RANDOM_ONE_ACTIONS = [
+      "bark",
+      "sweet",
+      "treat",
+      "spin",
+      "trot",
+      "stretch",
+      "trick",
+      "lick",
+      "down" // 時々伏せてのんびりするのも混ぜる
+    ];
 
     // ロック画面処理
     let inputCode = "";
@@ -489,6 +508,7 @@
 
     let currentSlot = "";
     let currentMotion = "sit";
+    let lastOneAction = "";
     let bgmEnabled = true;
     let wakeLock = null;
     let bubbleTimer = null;
@@ -514,7 +534,6 @@
       }
     }
 
-    // 指で撫でたときに「ブブブブ…」としっかり聞こえるハプティクス風振動音
     function playPetHapticPulse() {
       if (!audioCtx || audioCtx.state !== "running") return;
       try {
@@ -576,7 +595,7 @@
       }
     }
 
-    function showBubble(text, duration = 2800) {
+    function showBubble(text, duration = 3200) {
       if (!text) return;
       bubble.textContent = text;
       bubble.classList.add("show");
@@ -630,12 +649,11 @@
         if (isUnlocked) {
           playSlotBgm(asset.bgm);
 
-          // ミッドナイトに入ったら強制的に寝る、ミッドナイトが明けたら起きる
           if (slot === "midnight") {
+            clearTimeout(randomMotionTimer);
             playMotion("sleep", { customText: "すやすや…おやすみなさい…", silentBubble: prevSlot === "" });
           } else if (prevSlot === "midnight") {
             playMotion("bark", { customText: "ワン！おはよう〜！" });
-            scheduleNextRandomMotion();
           }
         }
       }
@@ -647,6 +665,10 @@
       if (!motion) return;
 
       currentMotion = motionKey;
+      if (motionKey !== "sit" && motionKey !== "sleep" && motionKey !== "pet") {
+        lastOneAction = motionKey;
+      }
+
       canvas.classList.toggle("is-sleeping", motionKey === "sleep");
       video.loop = loopOverride !== null ? loopOverride : motion.loop;
       video.src = motion.src;
@@ -659,9 +681,23 @@
           : motion.lines[Math.floor(Math.random() * motion.lines.length)];
         showBubble(text);
       }
+
+      // 基本の sit（または少し休む down）になったら、次の気まぐれワンアクションを予約する
+      if (motionKey === "sit" && currentSlot !== "midnight") {
+        scheduleNextOneAction(15000, 25000); // 15〜25秒のゆったり間隔
+      } else if (motionKey === "down" && currentSlot !== "midnight") {
+        // 伏せ（down）は12〜18秒ほどくつろいだら sit に戻る
+        clearTimeout(randomMotionTimer);
+        const restDelay = 12000 + Math.floor(Math.random() * 6000);
+        randomMotionTimer = setTimeout(() => {
+          if (isUnlocked && !isPointerDown && currentMotion === "down" && currentSlot !== "midnight") {
+            playMotion("sit", { silentBubble: true });
+          }
+        }, restDelay);
+      }
     }
 
-    // 単発アクション動画（bark, sweet）が終わったら、深夜ならsleep、それ以外はsitへ戻る
+    // 単発ワンアクション動画が終わったら、必ず基本の sit（深夜なら sleep）に戻る
     video.addEventListener("ended", () => {
       if (!video.loop) {
         if (currentSlot === "midnight") {
@@ -672,23 +708,20 @@
       }
     });
 
-    // ミッドナイト以外の時間帯だけ、起きてる4種（sit, down, bark, sweet）をランダム切替
-    function scheduleNextRandomMotion() {
+    // sit の状態から、一定時間後にランダムで1つだけアクションを起こす
+    function scheduleNextOneAction(minMs = 15000, maxMs = 25000) {
       clearTimeout(randomMotionTimer);
-      const nextDelay = 12000 + Math.floor(Math.random() * 12000);
+      if (!isUnlocked || currentSlot === "midnight") return;
+
+      const nextDelay = minMs + Math.floor(Math.random() * (maxMs - minMs));
       randomMotionTimer = setTimeout(() => {
-        if (isUnlocked && !isPointerDown) {
-          if (currentSlot === "midnight") {
-            if (currentMotion !== "sleep") {
-              playMotion("sleep", { silentBubble: true });
-            }
-          } else {
-            const candidates = AWAKE_RANDOM_MOTIONS.filter((k) => k !== currentMotion);
-            const nextKey = candidates[Math.floor(Math.random() * candidates.length)];
-            playMotion(nextKey);
-          }
-        }
-        scheduleNextRandomMotion();
+        if (!isUnlocked || isPointerDown || currentSlot === "midnight") return;
+        if (currentMotion !== "sit") return;
+
+        // 前回と同じ動きが連続しないように抽選
+        const candidates = RANDOM_ONE_ACTIONS.filter((k) => k !== lastOneAction);
+        const nextKey = candidates[Math.floor(Math.random() * candidates.length)];
+        playMotion(nextKey);
       }, nextDelay);
     }
 
@@ -720,7 +753,6 @@
 
       const now = Date.now();
 
-      // なでている間、一定リズムで「ブブブブ…」というハプティクス振動音を鳴らす（画面は揺らさない）
       if (step > 1.2 && now - lastHapticTime > 70) {
         lastHapticTime = now;
         playPetHapticPulse();
@@ -731,7 +763,6 @@
         spawnPetParticle(e.clientX, e.clientY);
       }
 
-      // 指でなで始めたら、指を離すまでずっと marron_pet.mp4 をループ再生
       if (strokeDistance > 24 && !petTriggeredInStroke) {
         petTriggeredInStroke = true;
         clearTimeout(randomMotionTimer);
@@ -747,21 +778,22 @@
       if (!isPointerDown) return;
 
       if (petTriggeredInStroke) {
-        // なでなでが終わったら、通常の sit（または深夜なら sleep）に戻る
         if (currentSlot === "midnight") {
           playMotion("sleep", { silentBubble: true });
         } else {
           playMotion("sit", { silentBubble: true });
         }
-        scheduleNextRandomMotion();
       } else if (strokeDistance <= 14 && isUnlocked) {
-        // ほとんど動かずに軽くタップしたとき
+        // 軽くタップしたときは、その場で気まぐれワンアクションを1つ披露！
         spawnPetParticle(e.clientX, e.clientY);
         if (currentSlot === "midnight") {
           showBubble("Zzz…むにゃむにゃ…");
         } else {
-          playMotion("bark", { customText: "ワン！（呼んだ？）" });
-          scheduleNextRandomMotion();
+          clearTimeout(randomMotionTimer);
+          const tapActions = ["bark", "treat", "trick", "lick", "spin"];
+          const candidates = tapActions.filter((k) => k !== lastOneAction);
+          const nextKey = candidates[Math.floor(Math.random() * candidates.length)];
+          playMotion(nextKey);
         }
       }
 
@@ -813,7 +845,6 @@
       } else {
         playMotion("bark", { customText: "ワンワン！（おかえり〜！）" });
       }
-      scheduleNextRandomMotion();
     }
 
     bgmToggleBtn.addEventListener("click", () => {

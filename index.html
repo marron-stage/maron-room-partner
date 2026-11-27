@@ -322,7 +322,6 @@
   </div>
 
   <video id="sourceVideo" src="assets/marron_sit.mp4" autoplay loop playsinline></video>
-  <audio id="bgmPlayer" loop preload="auto"></audio>
 
   <script>
     const PASSCODE = "9648";
@@ -336,12 +335,12 @@
         midnight: { room: "assets/room_midnight.jpg", bgm: "assets/bgm_midnight.mp3" }
       },
       motions: {
-        sit:   "assets/marron_sit.mp4",
-        down:  "assets/marron_down.mp4",
-        sleep: "assets/marron_sleep.mp4",
-        pet:   "assets/marron_pet.mp4",
-        sweet: "assets/marron_sweet.mp4",
-        bark:  "assets/marron_bark.mp4"
+        sit:   { src: "assets/marron_sit.mp4",   loop: true,  lines: ["ここでまったりしてるよ〜", "じーっ…（こっちを見ている）"] },
+        down:  { src: "assets/marron_down.mp4",  loop: true,  lines: ["ちょっと伏せてのんびりしようっと", "床が気持ちいいな〜"] },
+        sleep: { src: "assets/marron_sleep.mp4", loop: true,  lines: ["すやすや…おやすみ〜…", "うとうと…眠くなってきたワン…"] },
+        pet:   { src: "assets/marron_pet.mp4",   loop: false, lines: ["なでなで気持ちいいな〜♪", "えへへ、もっと撫でて〜"] },
+        sweet: { src: "assets/marron_sweet.mp4", loop: false, lines: ["おやつだ！モグモグ…おいしいワン！", "わーい！大好物だ〜！"] },
+        bark:  { src: "assets/marron_bark.mp4",  loop: false, lines: ["ワンワン！", "ワン！（こっち見てるよ！）"] }
       }
     };
 
@@ -394,7 +393,6 @@
     const clockText = document.getElementById("clockText");
     const timeMode = document.getElementById("timeMode");
     const bubble = document.getElementById("bubble");
-    const bgmPlayer = document.getElementById("bgmPlayer");
     const bgmToggleBtn = document.getElementById("bgmToggleBtn");
     const wakeBtn = document.getElementById("wakeBtn");
 
@@ -407,8 +405,68 @@
     let bgmEnabled = true;
     let wakeLock = null;
     let bubbleTimer = null;
+    let randomMotionTimer = null;
+
+    // Web Audio API を使ったBGM再生（動画の音声と同時再生させるため）
+    let audioCtx = null;
+    let bgmGainNode = null;
+    let bgmSourceNode = null;
+    const bgmBufferCache = {};
+    let bgmLoadToken = 0;
+
+    function initAudioContext() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContextClass();
+        bgmGainNode = audioCtx.createGain();
+        bgmGainNode.gain.value = bgmEnabled ? 0.45 : 0;
+        bgmGainNode.connect(audioCtx.destination);
+      }
+      if (audioCtx.state === "suspended") {
+        audioCtx.resume().catch(() => {});
+      }
+    }
+
+    function stopBgmNode() {
+      if (bgmSourceNode) {
+        try {
+          bgmSourceNode.stop();
+          bgmSourceNode.disconnect();
+        } catch (e) {}
+        bgmSourceNode = null;
+      }
+    }
+
+    async function playSlotBgm(bgmUrl) {
+      if (!isUnlocked) return;
+      initAudioContext();
+      const token = ++bgmLoadToken;
+      stopBgmNode();
+
+      try {
+        let buffer = bgmBufferCache[bgmUrl];
+        if (!buffer) {
+          const response = await fetch(bgmUrl);
+          const arrayBuffer = await response.arrayBuffer();
+          buffer = await audioCtx.decodeAudioData(arrayBuffer);
+          bgmBufferCache[bgmUrl] = buffer;
+        }
+        if (token !== bgmLoadToken) return;
+
+        const source = audioCtx.createBufferSource();
+        source.buffer = buffer;
+        source.loop = true;
+        source.connect(bgmGainNode);
+        bgmGainNode.gain.value = bgmEnabled ? 0.45 : 0;
+        source.start(0);
+        bgmSourceNode = source;
+      } catch (err) {
+        console.warn("BGM再生エラー:", err);
+      }
+    }
 
     function showBubble(text, duration = 2600) {
+      if (!text) return;
       bubble.textContent = text;
       bubble.classList.add("show");
       clearTimeout(bubbleTimer);
@@ -438,33 +496,54 @@
 
       if (currentSlot !== slot) {
         currentSlot = slot;
-        bgmPlayer.src = asset.bgm;
-        bgmPlayer.volume = 0.5;
-        if (isUnlocked && bgmEnabled) {
-          bgmPlayer.play().catch(() => {});
+        if (isUnlocked) {
+          playSlotBgm(asset.bgm);
         }
       }
     }
 
-    // モーション切り替え（loop=true は待機系、false は1回再生後にお座りへ戻る）
-    function playMotion(motionKey, { loop = false, text = "" } = {}) {
-      const src = ASSETS.motions[motionKey];
-      if (!src) return;
+    // モーション切り替え
+    function playMotion(motionKey, { customText = null, silentBubble = false } = {}) {
+      const motion = ASSETS.motions[motionKey];
+      if (!motion) return;
 
       currentMotion = motionKey;
-      video.loop = loop;
-      video.src = src;
+      video.loop = motion.loop;
+      video.src = motion.src;
       video.load();
       video.play().catch(() => {});
 
-      if (text) showBubble(text);
+      if (!silentBubble) {
+        const text = customText !== null
+          ? customText
+          : motion.lines[Math.floor(Math.random() * motion.lines.length)];
+        showBubble(text);
+      }
     }
 
+    // 単発アクション動画（bark, pet, sweet）が終わったらお座りへ戻る
     video.addEventListener("ended", () => {
       if (!video.loop) {
-        playMotion("sit", { loop: true });
+        playMotion("sit", { silentBubble: true });
       }
     });
+
+    // 全6種類の動画をランダムな間隔で自由に切り替えるスケジューラー
+    function scheduleNextRandomMotion() {
+      clearTimeout(randomMotionTimer);
+      // 12秒〜24秒のランダム間隔で次の動きを抽選
+      const nextDelay = 12000 + Math.floor(Math.random() * 12000);
+      randomMotionTimer = setTimeout(() => {
+        if (isUnlocked) {
+          const allKeys = Object.keys(ASSETS.motions);
+          // 同じ動きが連続しにくいように候補を絞る
+          const candidates = allKeys.filter((k) => k !== currentMotion);
+          const nextKey = candidates[Math.floor(Math.random() * candidates.length)];
+          playMotion(nextKey);
+        }
+        scheduleNextRandomMotion();
+      }, nextDelay);
+    }
 
     // ブルーバック透過処理
     function renderChromaKey() {
@@ -491,45 +570,51 @@
     }
 
     function startAppAfterUnlock() {
-      syncRoomAndBgm();
+      initAudioContext();
+      const slot = timeMode.value === "auto" ? getAutoSlot(new Date().getHours()) : timeMode.value;
+      const asset = ASSETS.slots[slot] || ASSETS.slots.day;
+      currentSlot = slot;
+      roomImg.src = asset.room;
+      playSlotBgm(asset.bgm);
+
       video.muted = false;
-      video.volume = 0.85;
-      playMotion("bark", { loop: false, text: "ワンワン！（おかえり〜！）" });
-      if (bgmEnabled) {
-        bgmPlayer.play().catch(() => {});
-      }
+      video.volume = 0.9;
+      playMotion("bark", { customText: "ワンワン！（おかえり〜！）" });
+      scheduleNextRandomMotion();
     }
 
-    // アクションボタン
+    // アクションボタン（押したときはタイマーをリセットして即再生）
     document.getElementById("petBtn").addEventListener("click", () => {
-      playMotion("pet", { loop: false, text: "なでなで気持ちいいな〜♪" });
+      playMotion("pet");
+      scheduleNextRandomMotion();
     });
 
     document.getElementById("treatBtn").addEventListener("click", () => {
-      playMotion("sweet", { loop: false, text: "おやつだ！モグモグ…おいしいワン！" });
+      playMotion("sweet");
+      scheduleNextRandomMotion();
     });
 
     document.getElementById("barkBtn").addEventListener("click", () => {
-      playMotion("bark", { loop: false, text: "ワン！（呼んだ？）" });
+      playMotion("bark");
+      scheduleNextRandomMotion();
     });
 
     document.getElementById("sleepBtn").addEventListener("click", () => {
       if (currentMotion === "sleep") {
-        playMotion("sit", { loop: true, text: "ふわぁ…起きたよ！" });
+        playMotion("sit", { customText: "ふわぁ…起きたよ！" });
       } else {
-        playMotion("sleep", { loop: true, text: "すやすや…おやすみ〜…" });
+        playMotion("sleep", { customText: "すやすや…おやすみ〜…" });
       }
+      scheduleNextRandomMotion();
     });
 
     bgmToggleBtn.addEventListener("click", () => {
       bgmEnabled = !bgmEnabled;
-      if (bgmEnabled) {
-        bgmToggleBtn.textContent = "🎵 BGM: ON";
-        bgmPlayer.play().catch(() => {});
-      } else {
-        bgmToggleBtn.textContent = "🔇 BGM: OFF";
-        bgmPlayer.pause();
+      initAudioContext();
+      if (bgmGainNode) {
+        bgmGainNode.gain.value = bgmEnabled ? 0.45 : 0;
       }
+      bgmToggleBtn.textContent = bgmEnabled ? "🎵 BGM: ON" : "🔇 BGM: OFF";
     });
 
     wakeBtn.addEventListener("click", async () => {
@@ -554,19 +639,15 @@
       }
     });
 
-    // 気まぐれ自律行動（待機中にお座り・伏せ・居眠りをランダム切り替え）
-    setInterval(() => {
-      if (!isUnlocked) return;
-      if (currentMotion === "sit" && Math.random() < 0.35) {
-        if (currentSlot === "midnight" || currentSlot === "night") {
-          playMotion("sleep", { loop: true, text: "うとうと…眠くなってきたワン…" });
-        } else {
-          playMotion("down", { loop: true, text: "ちょっと伏せてまったりしようっと" });
-        }
-      } else if ((currentMotion === "down" || currentMotion === "sleep") && Math.random() < 0.4) {
-        playMotion("sit", { loop: true, text: "むくり！お座りしたよ" });
+    // 別タブ・画面ロック時はBGMとAudioContextを一時停止し、戻ったら再開
+    document.addEventListener("visibilitychange", () => {
+      if (!audioCtx || !isUnlocked) return;
+      if (document.hidden) {
+        audioCtx.suspend().catch(() => {});
+      } else {
+        audioCtx.resume().catch(() => {});
       }
-    }, 35000);
+    });
 
     timeMode.addEventListener("change", syncRoomAndBgm);
 

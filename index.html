@@ -183,7 +183,7 @@
       left: 60%;
       bottom: calc(1.5% + env(safe-area-inset-bottom));
       width: auto;
-      height: 60vh;
+      height: 65vh;
       transform: translateX(-50%);
       transform-origin: center bottom;
       pointer-events: auto;
@@ -205,30 +205,30 @@
       bottom: calc(3% + env(safe-area-inset-bottom));
     }
 
-    /* 画面ペロペロ（lick）：ソファ側へ流れすぎないよう左寄りに補正 */
+    /* 画面ペロペロ（lick）：中央基準で素直に拡大・縮小する */
     .marron-canvas.is-licking {
-      left: 44%;
+      left: 50%;
       bottom: calc(6% + env(safe-area-inset-bottom));
       width: auto;
-      height: 49vh;
-      transform-origin: center center;
+      height: 43vh;
+      transform-origin: center 55%;
       z-index: 8;
       animation: lickApproach 10s ease-in-out forwards;
     }
 
     @keyframes lickApproach {
-      0%, 24% {
-        left: 44%;
+      0%, 20% {
+        left: 50%;
         bottom: calc(6% + env(safe-area-inset-bottom));
         transform: translateX(-50%) scale(1);
       }
-      45%, 74% {
-        left: 38%;
-        bottom: 6vh;
-        transform: translateX(-50%) scale(2.35);
+      45%, 72% {
+        left: 50%;
+        bottom: 2vh;
+        transform: translateX(-50%) scale(1.65);
       }
       92%, 100% {
-        left: 44%;
+        left: 50%;
         bottom: calc(6% + env(safe-area-inset-bottom));
         transform: translateX(-50%) scale(1);
       }

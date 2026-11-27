@@ -6,10 +6,13 @@
   <title>マロンのお部屋パートナー</title>
   <style>
     :root {
-      --panel: rgba(18, 22, 32, 0.68);
-      --border: rgba(255, 255, 255, 0.18);
-      --text: #f6f8fc;
+      --panel: rgba(34, 26, 20, 0.72);
+      --border: rgba(255, 232, 198, 0.28);
+      --text: #fff9f0;
       --accent: #f6b963;
+      --bubble-bg: rgba(255, 250, 240, 0.95);
+      --bubble-text: #4a3525;
+      --bubble-border: #e6c39c;
     }
 
     * {
@@ -24,9 +27,9 @@
       width: 100vw;
       height: 100dvh;
       overflow: hidden;
-      background: #0d1017;
+      background: #14100d;
       color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Maru Gothic ProN", "Hiragino Sans", "Noto Sans JP", sans-serif;
     }
 
     /* 横画面推奨案内（縦画面時に表示） */
@@ -34,7 +37,7 @@
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(13, 16, 23, 0.96);
+      background: rgba(20, 16, 13, 0.96);
       z-index: 9999;
       flex-direction: column;
       align-items: center;
@@ -50,17 +53,17 @@
       }
     }
 
-    /* パスコードロック画面 */
+    /* パスコードロック画面（可愛いカフェ・肉球風デザイン） */
     .lock-screen {
       position: fixed;
       inset: 0;
-      background: radial-gradient(circle at center, #1e2433 0%, #0d1017 100%);
+      background: radial-gradient(circle at center, #382a20 0%, #1a130e 100%);
       z-index: 500;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 14px;
+      gap: 12px;
       padding: 16px;
       transition: opacity 0.4s ease;
     }
@@ -70,57 +73,74 @@
       pointer-events: none;
     }
 
+    .lock-card {
+      background: rgba(255, 248, 238, 0.08);
+      border: 1.5px solid rgba(255, 224, 182, 0.25);
+      border-radius: 28px;
+      padding: 20px 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(12px);
+    }
+
     .lock-title {
-      font-size: 18px;
+      font-size: 17px;
       font-weight: 700;
-      letter-spacing: 0.06em;
+      color: #ffe8c8;
+      letter-spacing: 0.05em;
     }
 
     .lock-dots {
       display: flex;
-      gap: 12px;
+      gap: 14px;
       margin: 4px 0;
     }
 
     .dot {
-      width: 14px;
-      height: 14px;
+      width: 15px;
+      height: 15px;
       border-radius: 50%;
-      border: 2px solid var(--accent);
+      border: 2px solid #f6b963;
       background: transparent;
-      transition: background 0.15s ease;
+      transition: transform 0.15s ease, background 0.15s ease;
     }
 
     .dot.filled {
-      background: var(--accent);
+      background: #f6b963;
+      transform: scale(1.15);
     }
 
     .keypad {
       display: grid;
-      grid-template-columns: repeat(3, 64px);
+      grid-template-columns: repeat(3, 66px);
       gap: 10px;
     }
 
     .key-btn {
-      height: 50px;
-      border-radius: 14px;
+      height: 48px;
+      border-radius: 999px;
       font-size: 18px;
       font-weight: 700;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.16);
-      color: var(--text);
+      background: rgba(255, 247, 235, 0.14);
+      border: 1.5px solid rgba(255, 224, 182, 0.28);
+      color: #fff6e9;
       cursor: pointer;
+      box-shadow: 0 3px 0 rgba(0, 0, 0, 0.25);
+      transition: transform 0.1s ease, background 0.15s ease;
     }
 
     .key-btn:active {
-      background: rgba(246, 185, 99, 0.35);
-      transform: scale(0.95);
+      background: rgba(246, 185, 99, 0.45);
+      transform: translateY(2px) scale(0.96);
     }
 
     .lock-msg {
       height: 18px;
       font-size: 12.5px;
-      color: #ff9c9c;
+      color: #ffab91;
     }
 
     /* メインステージ（横画面16:9前提） */
@@ -141,7 +161,7 @@
       transition: opacity 0.6s ease;
     }
 
-    /* ラグの上にちょうど座るサイズと位置（16:9背景用） */
+    /* ラグの上にちょうど座るサイズと位置（直接タッチ・なでなで有効） */
     .marron-canvas {
       position: absolute;
       left: 55%;
@@ -150,8 +170,38 @@
       height: auto;
       transform: translateX(-50%);
       transform-origin: center bottom;
+      pointer-events: auto;
+      touch-action: none;
+      cursor: grab;
+      z-index: 4;
+    }
+
+    .marron-canvas:active {
+      cursor: grabbing;
+    }
+
+    /* なでなで時のハート・肉球エフェクト */
+    .pet-particle {
+      position: absolute;
+      font-size: 20px;
       pointer-events: none;
-      z-index: 3;
+      z-index: 15;
+      animation: floatUpParticle 0.95s ease-out forwards;
+    }
+
+    @keyframes floatUpParticle {
+      0% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(0.7);
+      }
+      50% {
+        opacity: 1;
+        transform: translate(-50%, -32px) scale(1.15);
+      }
+      100% {
+        opacity: 0;
+        transform: translate(-50%, -62px) scale(0.95);
+      }
     }
 
     .top-bar {
@@ -193,26 +243,52 @@
       font-size: 12px;
     }
 
+    /* しっぽ付きの可愛い吹き出しデザイン */
     .reaction-bubble {
       position: absolute;
-      top: calc(56px + env(safe-area-inset-top));
+      bottom: calc(15% + min(21vw, 29vh, 210px) + 12px + env(safe-area-inset-bottom));
+      left: 55%;
+      transform: translateX(-50%) scale(0.88);
+      background: var(--bubble-bg);
+      color: var(--bubble-text);
+      border: 2.5px solid var(--bubble-border);
+      border-radius: 22px;
+      padding: 9px 18px;
+      font-size: 13.5px;
+      font-weight: 700;
+      white-space: nowrap;
+      box-shadow: 0 6px 18px rgba(45, 28, 14, 0.22);
+      opacity: 0;
+      transition: opacity 0.22s ease, transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+      z-index: 12;
+      pointer-events: none;
+    }
+
+    .reaction-bubble::before {
+      content: "";
+      position: absolute;
+      bottom: -11px;
       left: 50%;
       transform: translateX(-50%);
-      background: var(--panel);
-      backdrop-filter: blur(10px);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 8px 16px;
-      font-size: 13px;
-      white-space: nowrap;
-      opacity: 0;
-      transition: opacity 0.25s ease;
-      z-index: 10;
-      pointer-events: none;
+      border-width: 11px 9px 0;
+      border-style: solid;
+      border-color: var(--bubble-border) transparent transparent;
+    }
+
+    .reaction-bubble::after {
+      content: "";
+      position: absolute;
+      bottom: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-width: 9px 7px 0;
+      border-style: solid;
+      border-color: var(--bubble-bg) transparent transparent;
     }
 
     .reaction-bubble.show {
       opacity: 1;
+      transform: translateX(-50%) scale(1);
     }
 
     .bottom-controls {
@@ -246,9 +322,9 @@
     }
 
     button.ctrl-btn.primary {
-      background: rgba(246, 185, 99, 0.32);
-      border-color: rgba(246, 185, 99, 0.72);
-      color: #ffe5b8;
+      background: rgba(246, 185, 99, 0.34);
+      border-color: rgba(246, 185, 99, 0.78);
+      color: #ffe9c4;
     }
 
     video#sourceVideo {
@@ -261,32 +337,34 @@
   <div class="portrait-warning">
     <div style="font-size: 36px;">📱🔄</div>
     <div style="font-size: 17px; font-weight: 700;">iPadを横向きにしてね</div>
-    <div style="font-size: 13px; color: #aab3c5;">マロンのお部屋パートナーは横画面専用です</div>
+    <div style="font-size: 13px; color: #c8b9a6;">マロンのお部屋パートナーは横画面専用です</div>
   </div>
 
   <!-- パスコードロック画面 (9648) -->
   <div class="lock-screen" id="lockScreen">
-    <div class="lock-title">🐾 マロンのお部屋パスコード</div>
-    <div class="lock-dots" id="lockDots">
-      <div class="dot"></div>
-      <div class="dot"></div>
-      <div class="dot"></div>
-      <div class="dot"></div>
-    </div>
-    <div class="lock-msg" id="lockMsg"></div>
-    <div class="keypad" id="keypad">
-      <button class="key-btn" data-key="1">1</button>
-      <button class="key-btn" data-key="2">2</button>
-      <button class="key-btn" data-key="3">3</button>
-      <button class="key-btn" data-key="4">4</button>
-      <button class="key-btn" data-key="5">5</button>
-      <button class="key-btn" data-key="6">6</button>
-      <button class="key-btn" data-key="7">7</button>
-      <button class="key-btn" data-key="8">8</button>
-      <button class="key-btn" data-key="9">9</button>
-      <button class="key-btn" data-key="C" style="font-size:14px;">クリア</button>
-      <button class="key-btn" data-key="0">0</button>
-      <button class="key-btn" data-key="BS" style="font-size:14px;">⌫</button>
+    <div class="lock-card">
+      <div class="lock-title">🐾 マロンのお部屋へようこそ</div>
+      <div class="lock-dots" id="lockDots">
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+      </div>
+      <div class="lock-msg" id="lockMsg"></div>
+      <div class="keypad" id="keypad">
+        <button class="key-btn" data-key="1">1</button>
+        <button class="key-btn" data-key="2">2</button>
+        <button class="key-btn" data-key="3">3</button>
+        <button class="key-btn" data-key="4">4</button>
+        <button class="key-btn" data-key="5">5</button>
+        <button class="key-btn" data-key="6">6</button>
+        <button class="key-btn" data-key="7">7</button>
+        <button class="key-btn" data-key="8">8</button>
+        <button class="key-btn" data-key="9">9</button>
+        <button class="key-btn" data-key="C" style="font-size:13px;">クリア</button>
+        <button class="key-btn" data-key="0">0</button>
+        <button class="key-btn" data-key="BS" style="font-size:14px;">⌫</button>
+      </div>
     </div>
   </div>
 
@@ -389,6 +467,7 @@
     });
 
     // メインアプリ要素
+    const stage = document.getElementById("stage");
     const roomImg = document.getElementById("roomImg");
     const clockText = document.getElementById("clockText");
     const timeMode = document.getElementById("timeMode");
@@ -473,6 +552,17 @@
       bubbleTimer = setTimeout(() => bubble.classList.remove("show"), duration);
     }
 
+    function spawnPetParticle(x, y) {
+      const icons = ["💖", "🐾", "✨", "♪"];
+      const el = document.createElement("div");
+      el.className = "pet-particle";
+      el.textContent = icons[Math.floor(Math.random() * icons.length)];
+      el.style.left = `${x}px`;
+      el.style.top = `${y}px`;
+      stage.appendChild(el);
+      setTimeout(() => el.remove(), 950);
+    }
+
     function getAutoSlot(hour) {
       if (hour >= 5 && hour < 10) return "morning";
       if (hour >= 10 && hour < 16) return "day";
@@ -531,12 +621,10 @@
     // 全6種類の動画をランダムな間隔で自由に切り替えるスケジューラー
     function scheduleNextRandomMotion() {
       clearTimeout(randomMotionTimer);
-      // 12秒〜24秒のランダム間隔で次の動きを抽選
       const nextDelay = 12000 + Math.floor(Math.random() * 12000);
       randomMotionTimer = setTimeout(() => {
         if (isUnlocked) {
           const allKeys = Object.keys(ASSETS.motions);
-          // 同じ動きが連続しにくいように候補を絞る
           const candidates = allKeys.filter((k) => k !== currentMotion);
           const nextKey = candidates[Math.floor(Math.random() * candidates.length)];
           playMotion(nextKey);
@@ -544,6 +632,61 @@
         scheduleNextRandomMotion();
       }, nextDelay);
     }
+
+    // 直接指でなでなで＆タップする操作
+    let isPointerDown = false;
+    let strokeDistance = 0;
+    let lastPos = null;
+    let lastParticleTime = 0;
+    let petTriggeredInStroke = false;
+
+    canvas.addEventListener("pointerdown", (e) => {
+      if (!isUnlocked) return;
+      isPointerDown = true;
+      strokeDistance = 0;
+      petTriggeredInStroke = false;
+      lastPos = { x: e.clientX, y: e.clientY };
+      canvas.setPointerCapture(e.pointerId);
+    });
+
+    canvas.addEventListener("pointermove", (e) => {
+      if (!isPointerDown || !lastPos || !isUnlocked) return;
+      const dx = e.clientX - lastPos.x;
+      const dy = e.clientY - lastPos.y;
+      strokeDistance += Math.hypot(dx, dy);
+      lastPos = { x: e.clientX, y: e.clientY };
+
+      const now = Date.now();
+      if (strokeDistance > 16 && now - lastParticleTime > 160) {
+        lastParticleTime = now;
+        spawnPetParticle(e.clientX, e.clientY);
+      }
+
+      if (strokeDistance > 36 && !petTriggeredInStroke) {
+        petTriggeredInStroke = true;
+        if (currentMotion !== "pet") {
+          playMotion("pet");
+        } else {
+          showBubble("そこそこ〜♪ もっと撫でて〜");
+        }
+        scheduleNextRandomMotion();
+      }
+    });
+
+    function endPointerStroke(e) {
+      if (!isPointerDown) return;
+      // ほとんど動かずに離した場合は「軽くタップ」とみなしてワン！と反応
+      if (!petTriggeredInStroke && strokeDistance <= 16 && isUnlocked) {
+        spawnPetParticle(e.clientX, e.clientY);
+        playMotion("bark", { customText: "ワン！（呼んだ？）" });
+        scheduleNextRandomMotion();
+      }
+      isPointerDown = false;
+      lastPos = null;
+    }
+
+    canvas.addEventListener("pointerup", endPointerStroke);
+    canvas.addEventListener("pointercancel", endPointerStroke);
 
     // ブルーバック透過処理
     function renderChromaKey() {
@@ -583,8 +726,10 @@
       scheduleNextRandomMotion();
     }
 
-    // アクションボタン（押したときはタイマーをリセットして即再生）
+    // アクションボタン
     document.getElementById("petBtn").addEventListener("click", () => {
+      const rect = canvas.getBoundingClientRect();
+      spawnPetParticle(rect.left + rect.width * 0.5, rect.top + rect.height * 0.3);
       playMotion("pet");
       scheduleNextRandomMotion();
     });
@@ -653,7 +798,7 @@
 
     syncRoomAndBgm();
     setInterval(syncRoomAndBgm, 15000);
-    video.muted = true; // ロック解除前は消音
+    video.muted = true;
     video.play().catch(() => {});
     renderChromaKey();
   </script>

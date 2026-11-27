@@ -178,29 +178,28 @@
       transition: width 0.25s ease, bottom 0.25s ease;
     }
 
-    /* マロン本体（9:16と16:9で体格が揃うように高さ基準で制御＋輪郭ドロップシャドウで立体化） */
+   /* 9:16縦長動画用（36vh → 45vh にアップ） */
     .marron-canvas {
       position: absolute;
       left: 60%;
-      bottom: calc(7.5% + env(safe-area-inset-bottom));
+      bottom: calc(6.5% + env(safe-area-inset-bottom));
       width: auto;
-      height: 36vh; /* デフォルト（9:16縦動画用） */
+      height: 45vh;
       transform: translateX(-50%);
       transform-origin: center bottom;
       pointer-events: auto;
       touch-action: none;
       cursor: grab;
       z-index: 4;
-      /* 輪郭に沿った立体的な落ち影（マロン自体は揺れない） */
       filter: drop-shadow(0 10px 12px rgba(28, 16, 8, 0.42)) drop-shadow(0 2px 3px rgba(28, 16, 8, 0.25));
     }
 
-    /* 16:9横長動画のときはフレーム内のマロンが小さいので高さを広げて体格を一致させる */
+    /* 16:9横長動画用（56vh → 43vh にダウン） */
     .marron-canvas.is-wide {
-      height: 56vh;
-      bottom: calc(5% + env(safe-area-inset-bottom));
+      height: 43vh;
+      bottom: calc(6% + env(safe-area-inset-bottom));
     }
-
+    
     /* ミッドナイト（ベッド）時はカーペット中央に配置 */
     .marron-canvas.is-sleeping {
       left: 62%;

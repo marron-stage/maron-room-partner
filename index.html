@@ -159,33 +159,87 @@
       object-fit: cover;
       pointer-events: none;
       transition: opacity 0.8s ease;
+      /* 背景をほんの少しだけ落ち着かせてマロンの立体感を際立たせる */
+      filter: contrast(0.98) brightness(0.97);
     }
 
-    /* 8の字散歩やペロペロの奥行きが映えるように横幅を広めに設定 */
+    /* 立体接地影（カーペットの上に落ちる自然な影・揺れなし） */
+    .marron-floor-shadow {
+      position: absolute;
+      left: 60%;
+      bottom: calc(6.5% + env(safe-area-inset-bottom));
+      width: 210px;
+      height: 44px;
+      transform: translateX(-50%);
+      background: radial-gradient(ellipse at center, rgba(38, 22, 10, 0.46) 0%, rgba(38, 22, 10, 0.18) 52%, rgba(38, 22, 10, 0) 76%);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 3;
+      transition: width 0.25s ease, bottom 0.25s ease;
+    }
+
+    /* マロン本体（9:16と16:9で体格が揃うように高さ基準で制御＋輪郭ドロップシャドウで立体化） */
     .marron-canvas {
       position: absolute;
       left: 60%;
-      bottom: calc(5% + env(safe-area-inset-bottom));
-      width: min(36vw, 48vh, 360px);
-      height: auto;
+      bottom: calc(7.5% + env(safe-area-inset-bottom));
+      width: auto;
+      height: 36vh; /* デフォルト（9:16縦動画用） */
       transform: translateX(-50%);
       transform-origin: center bottom;
       pointer-events: auto;
       touch-action: none;
       cursor: grab;
       z-index: 4;
-      transition: bottom 0.3s ease, left 0.3s ease, transform 0.3s ease;
+      /* 輪郭に沿った立体的な落ち影（マロン自体は揺れない） */
+      filter: drop-shadow(0 10px 12px rgba(28, 16, 8, 0.42)) drop-shadow(0 2px 3px rgba(28, 16, 8, 0.25));
+    }
+
+    /* 16:9横長動画のときはフレーム内のマロンが小さいので高さを広げて体格を一致させる */
+    .marron-canvas.is-wide {
+      height: 56vh;
+      bottom: calc(5% + env(safe-area-inset-bottom));
     }
 
     /* ミッドナイト（ベッド）時はカーペット中央に配置 */
     .marron-canvas.is-sleeping {
       left: 62%;
-      bottom: calc(1% + env(safe-area-inset-bottom));
-      transform: translateX(-50%) scale(1.15);
+      bottom: calc(4% + env(safe-area-inset-bottom));
+      height: 38vh;
     }
 
     .marron-canvas:active {
       cursor: grabbing;
+    }
+
+    /* 上から降ってくるおやつアニメーション */
+    .falling-treat {
+      position: absolute;
+      left: 60%;
+      top: 12%;
+      font-size: 36px;
+      pointer-events: none;
+      z-index: 14;
+      filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.35));
+      animation: dropTreatAnim 0.95s cubic-bezier(0.32, 0.94, 0.6, 1) forwards;
+    }
+
+    @keyframes dropTreatAnim {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, -60px) rotate(-25deg) scale(0.8);
+      }
+      20% {
+        opacity: 1;
+      }
+      75% {
+        opacity: 1;
+        transform: translate(-50%, 38vh) rotate(15deg) scale(1.05);
+      }
+      100% {
+        opacity: 0;
+        transform: translate(-50%, 44vh) rotate(25deg) scale(0.6);
+      }
     }
 
     /* なでなで時のハート・肉球エフェクト */
@@ -212,7 +266,7 @@
       }
     }
 
-    /* おしゃれな上部HUD（時計・BGM・画面常時ONのみ） */
+    /* おしゃれな上部HUD（時計・おやつ・BGM・画面常時ON） */
     .top-bar {
       position: absolute;
       top: calc(14px + env(safe-area-inset-top));
@@ -295,7 +349,12 @@
       color: #fff3dc;
     }
 
-    /* しっぽ付きの可愛い吹き出しデザイン */
+    button.pill-btn.treat-btn {
+      background: rgba(246, 185, 99, 0.26);
+      border-color: rgba(255, 214, 153, 0.65);
+    }
+
+    /* しっぽ付きの可愛い吹き出しデザイン（マロンの頭に被らない高さに調整） */
     .reaction-bubble {
       position: absolute;
       top: calc(36% + env(safe-area-inset-top));
@@ -387,6 +446,7 @@
   <!-- メイン画面 -->
   <div class="full-stage" id="stage">
     <img id="roomImg" class="room-layer" src="assets/room_day.jpg" alt="マロンのお部屋" />
+    <div class="marron-floor-shadow" id="floorShadow"></div>
     <canvas id="marronCanvas" class="marron-canvas"></canvas>
 
     <div class="top-bar">
@@ -396,6 +456,7 @@
       </div>
 
       <div class="top-controls">
+        <button class="pill-btn treat-btn" id="treatBtn">🦴 おやつ</button>
         <button class="pill-btn active" id="bgmToggleBtn">🎵 BGM: ON</button>
         <button class="pill-btn" id="wakeBtn">☀️ 画面常時ON</button>
       </div>
@@ -427,7 +488,7 @@
         // 気まぐれワンアクション（1回再生したら自動的に sit に戻る）
         bark:    { src: "assets/marron_bark.mp4",    loop: false, lines: ["ワンワン！", "ワン！（こっち見てるよ！）"] },
         sweet:   { src: "assets/marron_sweet.mp4",   loop: false, lines: ["クゥ〜ン…甘えさせて〜", "クゥン…そばにいてほしいワン…"] },
-        treat:   { src: "assets/marron_treat.mp4",   loop: false, lines: ["待て…よしっ！もぐもぐ美味しい〜！", "おやつ上手に食べられたよ♪"] },
+        treat:   { src: "assets/marron_treat.mp4",   loop: false, lines: ["待て…よしっ！もぐもぐ美味しい〜！", "わーいおやつだ！パクッ♪"] },
         spin:    { src: "assets/marron_spin.mp4",    loop: false, lines: ["あ！しっぽ発見！…うぅ、目が回る〜", "くるくる〜…ふらふらだワン…"] },
         trot:    { src: "assets/marron_trot.mp4",    loop: false, lines: ["お部屋の中をトコトコお散歩〜♪", "ルンルン♪ 8の字ウォーキング！"] },
         stretch: { src: "assets/marron_stretch.mp4", loop: false, lines: ["ふぁ〜あ…ぐーっと背伸び〜！", "う〜ん！伸びをしてリフレッシュ！"] },
@@ -436,17 +497,16 @@
       }
     };
 
-    // 「基本 sit で、たまに気まぐれワンアクションが出る」候補リスト
+    // 「基本 sit で、たまに気まぐれワンアクションが出る」候補リスト（おやつはボタン専用なので自動からは除外）
     const RANDOM_ONE_ACTIONS = [
       "bark",
       "sweet",
-      "treat",
       "spin",
       "trot",
       "stretch",
       "trick",
       "lick",
-      "down" // 時々伏せてのんびりするのも混ぜる
+      "down"
     ];
 
     // ロック画面処理
@@ -496,9 +556,11 @@
     // メインアプリ要素
     const stage = document.getElementById("stage");
     const roomImg = document.getElementById("roomImg");
+    const floorShadow = document.getElementById("floorShadow");
     const clockDate = document.getElementById("clockDate");
     const clockTime = document.getElementById("clockTime");
     const bubble = document.getElementById("bubble");
+    const treatBtn = document.getElementById("treatBtn");
     const bgmToggleBtn = document.getElementById("bgmToggleBtn");
     const wakeBtn = document.getElementById("wakeBtn");
 
@@ -614,6 +676,32 @@
       setTimeout(() => el.remove(), 950);
     }
 
+    // 上からおやつが降ってきて、着地タイミングでおやつモーションへ切り替える
+    function dropTreatAndEat() {
+      if (!isUnlocked) return;
+      initAudioContext();
+
+      if (currentSlot === "midnight") {
+        showBubble("Zzz…むにゃむにゃ…（おやつの夢を見てるよ）");
+        return;
+      }
+
+      clearTimeout(randomMotionTimer);
+
+      const treatEl = document.createElement("div");
+      treatEl.className = "falling-treat";
+      treatEl.textContent = "🦴";
+      stage.appendChild(treatEl);
+      setTimeout(() => treatEl.remove(), 960);
+
+      // おやつが落ちてくる少し後にモーション開始
+      setTimeout(() => {
+        playMotion("treat", { customText: "わーい！おやつだ！待て…よしっ！パクッ♪" });
+      }, 320);
+    }
+
+    treatBtn.addEventListener("click", dropTreatAndEat);
+
     function getAutoSlot(hour) {
       if (hour >= 5 && hour < 10) return "morning";
       if (hour >= 10 && hour < 16) return "day";
@@ -682,11 +770,9 @@
         showBubble(text);
       }
 
-      // 基本の sit（または少し休む down）になったら、次の気まぐれワンアクションを予約する
       if (motionKey === "sit" && currentSlot !== "midnight") {
-        scheduleNextOneAction(15000, 25000); // 15〜25秒のゆったり間隔
+        scheduleNextOneAction(15000, 25000);
       } else if (motionKey === "down" && currentSlot !== "midnight") {
-        // 伏せ（down）は12〜18秒ほどくつろいだら sit に戻る
         clearTimeout(randomMotionTimer);
         const restDelay = 12000 + Math.floor(Math.random() * 6000);
         randomMotionTimer = setTimeout(() => {
@@ -708,7 +794,6 @@
       }
     });
 
-    // sit の状態から、一定時間後にランダムで1つだけアクションを起こす
     function scheduleNextOneAction(minMs = 15000, maxMs = 25000) {
       clearTimeout(randomMotionTimer);
       if (!isUnlocked || currentSlot === "midnight") return;
@@ -718,14 +803,13 @@
         if (!isUnlocked || isPointerDown || currentSlot === "midnight") return;
         if (currentMotion !== "sit") return;
 
-        // 前回と同じ動きが連続しないように抽選
         const candidates = RANDOM_ONE_ACTIONS.filter((k) => k !== lastOneAction);
         const nextKey = candidates[Math.floor(Math.random() * candidates.length)];
         playMotion(nextKey);
       }, nextDelay);
     }
 
-    // 直接指でなでなで（なでている間は pet をループ再生し、指を離したら sit に戻る）
+    // 直接指でなでなで
     let isPointerDown = false;
     let strokeDistance = 0;
     let lastPos = null;
@@ -784,13 +868,12 @@
           playMotion("sit", { silentBubble: true });
         }
       } else if (strokeDistance <= 14 && isUnlocked) {
-        // 軽くタップしたときは、その場で気まぐれワンアクションを1つ披露！
         spawnPetParticle(e.clientX, e.clientY);
         if (currentSlot === "midnight") {
           showBubble("Zzz…むにゃむにゃ…");
         } else {
           clearTimeout(randomMotionTimer);
-          const tapActions = ["bark", "treat", "trick", "lick", "spin"];
+          const tapActions = ["bark", "trick", "lick", "spin", "stretch"];
           const candidates = tapActions.filter((k) => k !== lastOneAction);
           const nextKey = candidates[Math.floor(Math.random() * candidates.length)];
           playMotion(nextKey);
@@ -805,13 +888,19 @@
     canvas.addEventListener("pointerup", endPointerStroke);
     canvas.addEventListener("pointercancel", endPointerStroke);
 
-    // ブルーバック透過処理
+    // ブルーバック透過処理 ＋ 9:16と16:9の表示サイズ自動整合
     function renderChromaKey() {
       if (video.readyState >= 2 && video.videoWidth > 0) {
         if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
           canvas.width = video.videoWidth;
           canvas.height = video.videoHeight;
+
+          // 横長(16:9)か縦長(9:16)かを自動判定してクラス切り替え
+          const isWideVideo = video.videoWidth > video.videoHeight;
+          canvas.classList.toggle("is-wide", isWideVideo);
+          floorShadow.style.width = isWideVideo ? "240px" : "195px";
         }
+
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const data = frame.data;
@@ -881,7 +970,6 @@
       }
     });
 
-    // 別タブ・画面ロック時はBGMとAudioContextを一時停止し、戻ったら再開
     document.addEventListener("visibilitychange", () => {
       if (!audioCtx || !isUnlocked) return;
       if (document.hidden) {

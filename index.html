@@ -161,11 +161,11 @@
       transition: opacity 0.6s ease;
     }
 
-    /* カーペットの中央にしっかり座る・寝る位置 */
+    /* カーペットの中央にしっかり座る位置 */
     .marron-canvas {
       position: absolute;
-      left: 59%;
-      bottom: calc(9% + env(safe-area-inset-bottom));
+      left: 60%;
+      bottom: calc(6% + env(safe-area-inset-bottom));
       width: min(21vw, 29vh, 210px);
       height: auto;
       transform: translateX(-50%);
@@ -174,11 +174,14 @@
       touch-action: none;
       cursor: grab;
       z-index: 4;
-      transition: transform 0.25s ease;
+      transition: bottom 0.25s ease, left 0.25s ease, transform 0.25s ease;
     }
 
+    /* おやすみ（ベッド）時は動画内の下余白分だけさらに下へ降ろしてカーペット中央に配置 */
     .marron-canvas.is-sleeping {
-      transform: translateX(-50%) scale(1.12);
+      left: 62%;
+      bottom: calc(1% + env(safe-area-inset-bottom));
+      transform: translateX(-50%) scale(1.15);
     }
 
     .marron-canvas:active {
@@ -248,11 +251,11 @@
       font-size: 12px;
     }
 
-    /* しっぽ付きの可愛い吹き出しデザイン（マロンの頭とかぶらない高さ） */
+    /* しっぽ付きの可愛い吹き出しデザイン（マロンの頭よりずっと上に配置） */
     .reaction-bubble {
       position: absolute;
-      bottom: calc(9% + min(21vw, 29vh, 210px) + 34px + env(safe-area-inset-bottom));
-      left: 59%;
+      top: calc(31% + env(safe-area-inset-top));
+      left: 60%;
       transform: translateX(-50%) scale(0.88);
       background: var(--bubble-bg);
       color: var(--bubble-text);

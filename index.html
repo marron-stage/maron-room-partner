@@ -162,7 +162,7 @@
       filter: contrast(0.98) brightness(0.97);
     }
 
-    /* 立体接地影（カーペットの上に落ちる自然な影・揺れなし） */
+    /* 立体接地影（カーペットの上に落ちる自然な影） */
     .marron-floor-shadow {
       position: absolute;
       left: 60%;
@@ -174,16 +174,16 @@
       border-radius: 50%;
       pointer-events: none;
       z-index: 3;
-      transition: width 0.25s ease, bottom 0.25s ease;
+      transition: width 0.25s ease, bottom 0.25s ease, opacity 0.2s ease;
     }
 
-    /* マロン本体（9:16縦長動画用：45vh） */
+    /* マロン本体（9:16縦長動画用：60vh） */
     .marron-canvas {
       position: absolute;
       left: 60%;
-      bottom: calc(6.5% + env(safe-area-inset-bottom));
+      bottom: calc(5% + env(safe-area-inset-bottom));
       width: auto;
-      height: 45vh;
+      height: 60vh;
       transform: translateX(-50%);
       transform-origin: center bottom;
       pointer-events: auto;
@@ -193,17 +193,27 @@
       filter: drop-shadow(0 10px 12px rgba(28, 16, 8, 0.42)) drop-shadow(0 2px 3px rgba(28, 16, 8, 0.25));
     }
 
-    /* 16:9横長動画用（9:16と体格を一致させるため 43vh に設定） */
+    /* 16:9横長動画用（43vh） */
     .marron-canvas.is-wide {
       height: 43vh;
       bottom: calc(6% + env(safe-area-inset-bottom));
+    }
+
+    /* 画面ペロペロ（lick）時は画面いっぱいに広げて目の前のガラスを舐めている演出にする */
+    .marron-canvas.is-licking {
+      left: 50%;
+      bottom: 0;
+      width: 100vw;
+      height: 100dvh;
+      object-fit: cover;
+      z-index: 8;
     }
 
     /* ミッドナイト（ベッド）時はカーペット中央に配置 */
     .marron-canvas.is-sleeping {
       left: 62%;
       bottom: calc(4% + env(safe-area-inset-bottom));
-      height: 42vh;
+      height: 48vh;
     }
 
     .marron-canvas:active {
@@ -352,10 +362,50 @@
       border-color: rgba(255, 214, 153, 0.65);
     }
 
+    /* テスト用：時間帯切り替えバー（左下） */
+    .test-time-bar {
+      position: absolute;
+      left: 16px;
+      bottom: calc(14px + env(safe-area-inset-bottom));
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1.5px solid var(--glass-border);
+      border-radius: 999px;
+      padding: 5px 8px;
+      z-index: 12;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+    }
+
+    .test-time-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: rgba(255, 250, 242, 0.78);
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .test-time-btn:active {
+      transform: scale(0.94);
+    }
+
+    .test-time-btn.active {
+      background: rgba(246, 185, 99, 0.38);
+      border-color: rgba(255, 214, 153, 0.75);
+      color: #fffaf2;
+    }
+
     /* しっぽ付きの可愛い吹き出しデザイン */
     .reaction-bubble {
       position: absolute;
-      top: calc(36% + env(safe-area-inset-top));
+      top: calc(28% + env(safe-area-inset-top));
       left: 60%;
       transform: translateX(-50%) scale(0.88);
       background: var(--bubble-bg);
@@ -460,6 +510,16 @@
       </div>
     </div>
 
+    <!-- テスト用時間帯切り替えボタン -->
+    <div class="test-time-bar" id="testTimeBar">
+      <button class="test-time-btn active" data-slot="auto">🕒 自動</button>
+      <button class="test-time-btn" data-slot="morning">🌅 朝</button>
+      <button class="test-time-btn" data-slot="day">☀️ 昼</button>
+      <button class="test-time-btn" data-slot="sunset">🌇 夕方</button>
+      <button class="test-time-btn" data-slot="night">🌙 夜</button>
+      <button class="test-time-btn" data-slot="midnight">🌌 深夜</button>
+    </div>
+
     <div class="reaction-bubble" id="bubble">ワンワン！</div>
   </div>
 
@@ -467,15 +527,14 @@
 
   <script>
     const PASSCODE = "9648";
-    const EYE_PARALLAX_PX = 5; // 裸眼レンチキュラー視差の左右ズレ幅（px）
 
     const ASSETS = {
       slots: {
-        morning:  { room: "assets/room_morning.jpg",  bgm: "assets/bgm_morning.mp3" },
-        day:      { room: "assets/room_day.jpg",      bgm: "assets/bgm_day.mp3" },
-        sunset:   { room: "assets/room_sunset.jpg",   bgm: "assets/bgm_sunset.mp3" },
-        night:    { room: "assets/room_night.jpg",    bgm: "assets/bgm_night.mp3" },
-        midnight: { room: "assets/room_midnight.jpg", bgm: "assets/bgm_midnight.mp3" }
+        morning:  { room: "assets/room_morning.jpg",  bgm: "assets/bgm_morning.mp3",  label: "朝" },
+        day:      { room: "assets/room_day.jpg",      bgm: "assets/bgm_day.mp3",      label: "昼" },
+        sunset:   { room: "assets/room_sunset.jpg",   bgm: "assets/bgm_sunset.mp3",   label: "夕方" },
+        night:    { room: "assets/room_night.jpg",    bgm: "assets/bgm_night.mp3",    label: "夜" },
+        midnight: { room: "assets/room_midnight.jpg", bgm: "assets/bgm_midnight.mp3", label: "深夜" }
       },
       motions: {
         // 基本の待機・リラックスポーズ（ループ）
@@ -496,7 +555,6 @@
       }
     };
 
-    // 「基本 sit で、たまに気まぐれワンアクションが出る」候補リスト
     const RANDOM_ONE_ACTIONS = [
       "bark",
       "sweet",
@@ -562,15 +620,13 @@
     const treatBtn = document.getElementById("treatBtn");
     const bgmToggleBtn = document.getElementById("bgmToggleBtn");
     const wakeBtn = document.getElementById("wakeBtn");
+    const testTimeBar = document.getElementById("testTimeBar");
 
     const video = document.getElementById("sourceVideo");
     const canvas = document.getElementById("marronCanvas");
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
-    // 裸眼レンチキュラー視差合成用のオフスクリーンCanvas
-    const offCanvas = document.createElement("canvas");
-    const offCtx = offCanvas.getContext("2d", { willReadFrequently: true });
-
+    let forcedSlot = "auto"; // "auto" または "morning" | "day" | "sunset" | "night" | "midnight"
     let currentSlot = "";
     let currentMotion = "sit";
     let lastOneAction = "";
@@ -579,7 +635,7 @@
     let bubbleTimer = null;
     let randomMotionTimer = null;
 
-    // Web Audio API（BGM同時再生 ＋ なでなで時の擬似ハプティクス振動音）
+    // Web Audio API
     let audioCtx = null;
     let bgmGainNode = null;
     let bgmSourceNode = null;
@@ -714,7 +770,7 @@
 
     const WEEKDAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
-    function syncClockRoomAndBgm() {
+    function syncClockRoomAndBgm(isManualTest = false) {
       const now = new Date();
       const mon = now.getMonth() + 1;
       const day = now.getDate();
@@ -725,7 +781,7 @@
       clockDate.textContent = `${mon}/${day} (${wday})`;
       clockTime.textContent = `${hh}:${mm}`;
 
-      const slot = getAutoSlot(now.getHours());
+      const slot = forcedSlot === "auto" ? getAutoSlot(now.getHours()) : forcedSlot;
       const asset = ASSETS.slots[slot] || ASSETS.slots.day;
 
       if (roomImg.getAttribute("src") !== asset.room) {
@@ -744,10 +800,23 @@
             playMotion("sleep", { customText: "すやすや…おやすみなさい…", silentBubble: prevSlot === "" });
           } else if (prevSlot === "midnight") {
             playMotion("bark", { customText: "ワン！おはよう〜！" });
+          } else if (isManualTest) {
+            showBubble(`【テスト】${asset.label}の時間帯に切り替えたよ！`);
           }
         }
       }
     }
+
+    // テスト用時間帯切り替えボタンのクリック処理
+    testTimeBar.addEventListener("click", (e) => {
+      const btn = e.target.closest(".test-time-btn");
+      if (!btn) return;
+      forcedSlot = btn.dataset.slot;
+      testTimeBar.querySelectorAll(".test-time-btn").forEach((b) => {
+        b.classList.toggle("active", b === btn);
+      });
+      syncClockRoomAndBgm(true);
+    });
 
     // モーション切り替え
     function playMotion(motionKey, { customText = null, silentBubble = false, loopOverride = null } = {}) {
@@ -759,7 +828,11 @@
         lastOneAction = motionKey;
       }
 
+      const isLicking = motionKey === "lick";
       canvas.classList.toggle("is-sleeping", motionKey === "sleep");
+      canvas.classList.toggle("is-licking", isLicking);
+      floorShadow.style.opacity = isLicking ? "0" : "1";
+
       video.loop = loopOverride !== null ? loopOverride : motion.loop;
       video.src = motion.src;
       video.load();
@@ -890,66 +963,38 @@
     canvas.addEventListener("pointerup", endPointerStroke);
     canvas.addEventListener("pointercancel", endPointerStroke);
 
-    // ブルーバック透過処理 ＋ 裸眼レンチキュラー両目視差合成
+    // ブルーバック透過処理（通常のクッキリ2D表示）
     function renderChromaKey() {
       if (video.readyState >= 2 && video.videoWidth > 0) {
-        const w = video.videoWidth;
-        const h = video.videoHeight;
+        if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
 
-        if (canvas.width !== w || canvas.height !== h) {
-          canvas.width = w;
-          canvas.height = h;
-          offCanvas.width = w;
-          offCanvas.height = h;
-
-          const isWideVideo = w > h;
+          const isWideVideo = video.videoWidth > video.videoHeight;
           canvas.classList.toggle("is-wide", isWideVideo);
           floorShadow.style.width = isWideVideo ? "230px" : "200px";
         }
 
-        // 1. オフスクリーンCanvasでブルーバックを透過
-        offCtx.drawImage(video, 0, 0, w, h);
-        const srcFrame = offCtx.getImageData(0, 0, w, h);
-        const src = srcFrame.data;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = frame.data;
 
-        for (let i = 0; i < src.length; i += 4) {
-          const r = src[i];
-          const g = src[i + 1];
-          const b = src[i + 2];
+        for (let i = 0; i < data.length; i += 4) {
+          const r = data[i];
+          const g = data[i + 1];
+          const b = data[i + 2];
           if (b > 95 && b - Math.max(r, g) > 35) {
-            src[i + 3] = 0;
+            data[i + 3] = 0;
           }
         }
-
-        // 2. 裸眼レンチキュラー方式（2pxごとの極細縦スリットで左目用・右目用の視差を交互配置）
-        const outFrame = ctx.createImageData(w, h);
-        const out = outFrame.data;
-        const shift = EYE_PARALLAX_PX;
-
-        for (let y = 0; y < h; y++) {
-          const rowOffset = y * w * 4;
-          for (let x = 0; x < w; x++) {
-            const dstIdx = rowOffset + x * 4;
-            const useLeft = ((x >> 1) & 1) === 0;
-            const sx = useLeft
-              ? Math.min(w - 1, Math.max(0, x - shift))
-              : Math.min(w - 1, Math.max(0, x + shift));
-            const sIdx = rowOffset + sx * 4;
-
-            out[dstIdx]     = src[sIdx];
-            out[dstIdx + 1] = src[sIdx + 1];
-            out[dstIdx + 2] = src[sIdx + 2];
-            out[dstIdx + 3] = src[sIdx + 3];
-          }
-        }
-        ctx.putImageData(outFrame, 0, 0);
+        ctx.putImageData(frame, 0, 0);
       }
       requestAnimationFrame(renderChromaKey);
     }
 
     function startAppAfterUnlock() {
       initAudioContext();
-      const slot = getAutoSlot(new Date().getHours());
+      const slot = forcedSlot === "auto" ? getAutoSlot(new Date().getHours()) : forcedSlot;
       const asset = ASSETS.slots[slot] || ASSETS.slots.day;
       currentSlot = slot;
       roomImg.src = asset.room;
@@ -1009,7 +1054,7 @@
     });
 
     syncClockRoomAndBgm();
-    setInterval(syncClockRoomAndBgm, 10000);
+    setInterval(() => syncClockRoomAndBgm(false), 10000);
     video.muted = true;
     video.play().catch(() => {});
     renderChromaKey();

@@ -321,7 +321,7 @@
     </div>
   </div>
 
-  <video id="sourceVideo" src="assets/marron_sit.mp4" autoplay loop muted playsinline></video>
+  <video id="sourceVideo" src="assets/marron_sit.mp4" autoplay loop playsinline></video>
   <audio id="bgmPlayer" loop preload="auto"></audio>
 
   <script>
@@ -439,7 +439,7 @@
       if (currentSlot !== slot) {
         currentSlot = slot;
         bgmPlayer.src = asset.bgm;
-        bgmPlayer.volume = 0.55;
+        bgmPlayer.volume = 0.5;
         if (isUnlocked && bgmEnabled) {
           bgmPlayer.play().catch(() => {});
         }
@@ -492,6 +492,8 @@
 
     function startAppAfterUnlock() {
       syncRoomAndBgm();
+      video.muted = false;
+      video.volume = 0.85;
       playMotion("bark", { loop: false, text: "ワンワン！（おかえり〜！）" });
       if (bgmEnabled) {
         bgmPlayer.play().catch(() => {});
@@ -570,6 +572,7 @@
 
     syncRoomAndBgm();
     setInterval(syncRoomAndBgm, 15000);
+    video.muted = true; // ロック解除前は消音
     video.play().catch(() => {});
     renderChromaKey();
   </script>

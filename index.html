@@ -9,6 +9,7 @@
       --panel: rgba(18, 22, 32, 0.68);
       --border: rgba(255, 255, 255, 0.18);
       --text: #f6f8fc;
+      --accent: #f6b963;
     }
 
     * {
@@ -28,6 +29,101 @@
       font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif;
     }
 
+    /* 横画面推奨案内（縦画面時に表示） */
+    .portrait-warning {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(13, 16, 23, 0.96);
+      z-index: 9999;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 24px;
+      gap: 14px;
+    }
+
+    @media (orientation: portrait) {
+      .portrait-warning {
+        display: flex;
+      }
+    }
+
+    /* パスコードロック画面 */
+    .lock-screen {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at center, #1e2433 0%, #0d1017 100%);
+      z-index: 500;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      padding: 16px;
+      transition: opacity 0.4s ease;
+    }
+
+    .lock-screen.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .lock-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+    }
+
+    .lock-dots {
+      display: flex;
+      gap: 12px;
+      margin: 4px 0;
+    }
+
+    .dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 2px solid var(--accent);
+      background: transparent;
+      transition: background 0.15s ease;
+    }
+
+    .dot.filled {
+      background: var(--accent);
+    }
+
+    .keypad {
+      display: grid;
+      grid-template-columns: repeat(3, 64px);
+      gap: 10px;
+    }
+
+    .key-btn {
+      height: 50px;
+      border-radius: 14px;
+      font-size: 18px;
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .key-btn:active {
+      background: rgba(246, 185, 99, 0.35);
+      transform: scale(0.95);
+    }
+
+    .lock-msg {
+      height: 18px;
+      font-size: 12.5px;
+      color: #ff9c9c;
+    }
+
+    /* メインステージ（横画面16:9前提） */
     .full-stage {
       position: relative;
       width: 100%;
@@ -42,14 +138,15 @@
       height: 100%;
       object-fit: cover;
       pointer-events: none;
+      transition: opacity 0.6s ease;
     }
 
-    /* 縦・横どちらでも大きさが揃うように調整 */
+    /* ラグの上にちょうど座るサイズと位置 */
     .marron-canvas {
       position: absolute;
       left: 50%;
-      bottom: calc(12% + env(safe-area-inset-bottom));
-      width: min(58vw, 48vh, 360px);
+      bottom: calc(11% + env(safe-area-inset-bottom));
+      width: min(36vw, 48vh, 380px);
       height: auto;
       transform: translateX(-50%);
       transform-origin: center bottom;
@@ -57,27 +154,22 @@
       z-index: 3;
     }
 
-    .marron-canvas.bounce {
-      animation: marronBounce 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-
-    @keyframes marronBounce {
-      0%   { transform: translateX(-50%) scale(1, 1); }
-      35%  { transform: translate(-50%, -16px) scale(1.06, 0.94); }
-      70%  { transform: translate(-50%, 4px) scale(0.97, 1.03); }
-      100% { transform: translateX(-50%) scale(1, 1); }
-    }
-
     .top-bar {
       position: absolute;
       top: calc(12px + env(safe-area-inset-top));
-      left: 12px;
-      right: 12px;
+      left: 16px;
+      right: 16px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 8px;
       z-index: 10;
+    }
+
+    .top-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
     .clock-pill {
@@ -110,7 +202,7 @@
       backdrop-filter: blur(10px);
       border: 1px solid var(--border);
       border-radius: 16px;
-      padding: 8px 14px;
+      padding: 8px 16px;
       font-size: 13px;
       white-space: nowrap;
       opacity: 0;
@@ -125,37 +217,37 @@
 
     .bottom-controls {
       position: absolute;
-      bottom: calc(18px + env(safe-area-inset-bottom));
-      left: 12px;
-      right: 12px;
+      bottom: calc(14px + env(safe-area-inset-bottom));
+      left: 16px;
+      right: 16px;
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
-      gap: 8px;
+      gap: 10px;
       z-index: 10;
     }
 
-    button {
+    button.ctrl-btn {
       background: var(--panel);
       backdrop-filter: blur(10px);
       color: var(--text);
       border: 1px solid var(--border);
       border-radius: 999px;
-      padding: 7px 13px;
-      font-size: 12.5px;
+      padding: 8px 15px;
+      font-size: 13px;
       font-weight: 600;
       line-height: 1.2;
       cursor: pointer;
       transition: transform 0.12s ease, background 0.15s ease;
     }
 
-    button:active {
+    button.ctrl-btn:active {
       transform: scale(0.95);
     }
 
-    button.primary {
-      background: rgba(246, 185, 99, 0.3);
-      border-color: rgba(246, 185, 99, 0.68);
+    button.ctrl-btn.primary {
+      background: rgba(246, 185, 99, 0.32);
+      border-color: rgba(246, 185, 99, 0.72);
       color: #ffe5b8;
     }
 
@@ -165,71 +257,162 @@
   </style>
 </head>
 <body>
+  <!-- 縦画面時の案内 -->
+  <div class="portrait-warning">
+    <div style="font-size: 36px;">📱🔄</div>
+    <div style="font-size: 17px; font-weight: 700;">iPadを横向きにしてね</div>
+    <div style="font-size: 13px; color: #aab3c5;">マロンのお部屋パートナーは横画面専用です</div>
+  </div>
+
+  <!-- パスコードロック画面 (9648) -->
+  <div class="lock-screen" id="lockScreen">
+    <div class="lock-title">🐾 マロンのお部屋パスコード</div>
+    <div class="lock-dots" id="lockDots">
+      <div class="dot"></div>
+      <div class="dot"></div>
+      <div class="dot"></div>
+      <div class="dot"></div>
+    </div>
+    <div class="lock-msg" id="lockMsg"></div>
+    <div class="keypad" id="keypad">
+      <button class="key-btn" data-key="1">1</button>
+      <button class="key-btn" data-key="2">2</button>
+      <button class="key-btn" data-key="3">3</button>
+      <button class="key-btn" data-key="4">4</button>
+      <button class="key-btn" data-key="5">5</button>
+      <button class="key-btn" data-key="6">6</button>
+      <button class="key-btn" data-key="7">7</button>
+      <button class="key-btn" data-key="8">8</button>
+      <button class="key-btn" data-key="9">9</button>
+      <button class="key-btn" data-key="C" style="font-size:14px;">クリア</button>
+      <button class="key-btn" data-key="0">0</button>
+      <button class="key-btn" data-key="BS" style="font-size:14px;">⌫</button>
+    </div>
+  </div>
+
+  <!-- メイン画面 -->
   <div class="full-stage" id="stage">
-    <img id="roomImg" class="room-layer" src="assets/room_day.png" alt="マロンのお部屋" />
+    <img id="roomImg" class="room-layer" src="assets/room_day.jpg" alt="マロンのお部屋" />
     <canvas id="marronCanvas" class="marron-canvas"></canvas>
 
     <div class="top-bar">
       <div class="clock-pill" id="clockText">--:--</div>
-      <select class="time-select" id="timeMode" aria-label="時間帯モード">
-        <option value="auto">時間帯: 自動</option>
-        <option value="morning">朝 (morning)</option>
-        <option value="day">昼 (day)</option>
-        <option value="sunset">夕方 (sunset)</option>
-        <option value="night">夜 (night)</option>
-        <option value="midnight">深夜 (midnight)</option>
-      </select>
+      <div class="top-right">
+        <button class="ctrl-btn" id="bgmToggleBtn">🎵 BGM: ON</button>
+        <select class="time-select" id="timeMode" aria-label="時間帯モード">
+          <option value="auto">時間帯: 自動</option>
+          <option value="morning">朝 (morning)</option>
+          <option value="day">昼 (day)</option>
+          <option value="sunset">夕方 (sunset)</option>
+          <option value="night">夜 (night)</option>
+          <option value="midnight">深夜 (midnight)</option>
+        </select>
+      </div>
     </div>
 
-    <div class="reaction-bubble" id="bubble">ワン！</div>
+    <div class="reaction-bubble" id="bubble">ワンワン！</div>
 
     <div class="bottom-controls">
-      <button class="primary" id="petBtn">🐾 なでる</button>
-      <button class="primary" id="treatBtn">🦴 おやつ</button>
-      <button id="wakeBtn">☀️ 画面常時ON</button>
+      <button class="ctrl-btn primary" id="petBtn">🐾 なでる</button>
+      <button class="ctrl-btn primary" id="treatBtn">🦴 おやつ</button>
+      <button class="ctrl-btn primary" id="barkBtn">🐶 呼ぶ</button>
+      <button class="ctrl-btn" id="sleepBtn">💤 おやすみ</button>
+      <button class="ctrl-btn" id="wakeBtn">☀️ 画面常時ON</button>
     </div>
   </div>
 
   <video id="sourceVideo" src="assets/marron_sit.mp4" autoplay loop muted playsinline></video>
+  <audio id="bgmPlayer" loop preload="auto"></audio>
 
   <script>
+    const PASSCODE = "9648";
+
     const ASSETS = {
-      rooms: {
-        morning:  "assets/room_morning.png",
-        day:      "assets/room_day.png",
-        sunset:   "assets/room_sunset.png",
-        night:    "assets/room_night.png",
-        midnight: "assets/room_midnight.png"
+      slots: {
+        morning:  { room: "assets/room_morning.jpg",  bgm: "assets/bgm_morning.mp3" },
+        day:      { room: "assets/room_day.jpg",      bgm: "assets/bgm_day.mp3" },
+        sunset:   { room: "assets/room_sunset.jpg",   bgm: "assets/bgm_sunset.mp3" },
+        night:    { room: "assets/room_night.jpg",    bgm: "assets/bgm_night.mp3" },
+        midnight: { room: "assets/room_midnight.jpg", bgm: "assets/bgm_midnight.mp3" }
       },
-      sitVideo: "assets/marron_sit.mp4"
+      motions: {
+        sit:   "assets/marron_sit.mp4",
+        down:  "assets/marron_down.mp4",
+        sleep: "assets/marron_sleep.mp4",
+        pet:   "assets/marron_pet.mp4",
+        sweet: "assets/marron_sweet.mp4",
+        bark:  "assets/marron_bark.mp4"
+      }
     };
 
+    // ロック画面処理
+    let inputCode = "";
+    let isUnlocked = false;
+    const lockScreen = document.getElementById("lockScreen");
+    const lockDots = document.querySelectorAll("#lockDots .dot");
+    const lockMsg = document.getElementById("lockMsg");
+
+    function updateDots() {
+      lockDots.forEach((dot, idx) => {
+        dot.classList.toggle("filled", idx < inputCode.length);
+      });
+    }
+
+    document.getElementById("keypad").addEventListener("click", (e) => {
+      const btn = e.target.closest(".key-btn");
+      if (!btn || isUnlocked) return;
+      const key = btn.dataset.key;
+
+      if (key === "C") {
+        inputCode = "";
+        lockMsg.textContent = "";
+      } else if (key === "BS") {
+        inputCode = inputCode.slice(0, -1);
+        lockMsg.textContent = "";
+      } else if (inputCode.length < 4) {
+        inputCode += key;
+      }
+      updateDots();
+
+      if (inputCode.length === 4) {
+        if (inputCode === PASSCODE) {
+          isUnlocked = true;
+          lockScreen.classList.add("hidden");
+          startAppAfterUnlock();
+        } else {
+          lockMsg.textContent = "パスコードが違うみたい…";
+          setTimeout(() => {
+            inputCode = "";
+            updateDots();
+          }, 450);
+        }
+      }
+    });
+
+    // メインアプリ要素
     const roomImg = document.getElementById("roomImg");
     const clockText = document.getElementById("clockText");
     const timeMode = document.getElementById("timeMode");
     const bubble = document.getElementById("bubble");
-    const petBtn = document.getElementById("petBtn");
-    const treatBtn = document.getElementById("treatBtn");
+    const bgmPlayer = document.getElementById("bgmPlayer");
+    const bgmToggleBtn = document.getElementById("bgmToggleBtn");
     const wakeBtn = document.getElementById("wakeBtn");
 
     const video = document.getElementById("sourceVideo");
     const canvas = document.getElementById("marronCanvas");
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
+    let currentSlot = "";
+    let currentMotion = "sit";
+    let bgmEnabled = true;
     let wakeLock = null;
     let bubbleTimer = null;
 
-    function showBubble(text) {
+    function showBubble(text, duration = 2600) {
       bubble.textContent = text;
       bubble.classList.add("show");
       clearTimeout(bubbleTimer);
-      bubbleTimer = setTimeout(() => bubble.classList.remove("show"), 2400);
-    }
-
-    function bounceMarron() {
-      canvas.classList.remove("bounce");
-      void canvas.offsetWidth;
-      canvas.classList.add("bounce");
+      bubbleTimer = setTimeout(() => bubble.classList.remove("show"), duration);
     }
 
     function getAutoSlot(hour) {
@@ -240,19 +423,50 @@
       return "midnight";
     }
 
-    function updateClockAndRoom() {
+    function syncRoomAndBgm() {
       const now = new Date();
       const hh = String(now.getHours()).padStart(2, "0");
       const mm = String(now.getMinutes()).padStart(2, "0");
       clockText.textContent = `${hh}:${mm}`;
 
-      const mode = timeMode.value === "auto" ? getAutoSlot(now.getHours()) : timeMode.value;
-      const nextSrc = ASSETS.rooms[mode] || ASSETS.rooms.day;
-      if (roomImg.getAttribute("src") !== nextSrc) {
-        roomImg.src = nextSrc;
+      const slot = timeMode.value === "auto" ? getAutoSlot(now.getHours()) : timeMode.value;
+      const asset = ASSETS.slots[slot] || ASSETS.slots.day;
+
+      if (roomImg.getAttribute("src") !== asset.room) {
+        roomImg.src = asset.room;
+      }
+
+      if (currentSlot !== slot) {
+        currentSlot = slot;
+        bgmPlayer.src = asset.bgm;
+        bgmPlayer.volume = 0.55;
+        if (isUnlocked && bgmEnabled) {
+          bgmPlayer.play().catch(() => {});
+        }
       }
     }
 
+    // モーション切り替え（loop=true は待機系、false は1回再生後にお座りへ戻る）
+    function playMotion(motionKey, { loop = false, text = "" } = {}) {
+      const src = ASSETS.motions[motionKey];
+      if (!src) return;
+
+      currentMotion = motionKey;
+      video.loop = loop;
+      video.src = src;
+      video.load();
+      video.play().catch(() => {});
+
+      if (text) showBubble(text);
+    }
+
+    video.addEventListener("ended", () => {
+      if (!video.loop) {
+        playMotion("sit", { loop: true });
+      }
+    });
+
+    // ブルーバック透過処理
     function renderChromaKey() {
       if (video.readyState >= 2 && video.videoWidth > 0) {
         if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
@@ -276,6 +490,46 @@
       requestAnimationFrame(renderChromaKey);
     }
 
+    function startAppAfterUnlock() {
+      syncRoomAndBgm();
+      playMotion("bark", { loop: false, text: "ワンワン！（おかえり〜！）" });
+      if (bgmEnabled) {
+        bgmPlayer.play().catch(() => {});
+      }
+    }
+
+    // アクションボタン
+    document.getElementById("petBtn").addEventListener("click", () => {
+      playMotion("pet", { loop: false, text: "なでなで気持ちいいな〜♪" });
+    });
+
+    document.getElementById("treatBtn").addEventListener("click", () => {
+      playMotion("sweet", { loop: false, text: "おやつだ！モグモグ…おいしいワン！" });
+    });
+
+    document.getElementById("barkBtn").addEventListener("click", () => {
+      playMotion("bark", { loop: false, text: "ワン！（呼んだ？）" });
+    });
+
+    document.getElementById("sleepBtn").addEventListener("click", () => {
+      if (currentMotion === "sleep") {
+        playMotion("sit", { loop: true, text: "ふわぁ…起きたよ！" });
+      } else {
+        playMotion("sleep", { loop: true, text: "すやすや…おやすみ〜…" });
+      }
+    });
+
+    bgmToggleBtn.addEventListener("click", () => {
+      bgmEnabled = !bgmEnabled;
+      if (bgmEnabled) {
+        bgmToggleBtn.textContent = "🎵 BGM: ON";
+        bgmPlayer.play().catch(() => {});
+      } else {
+        bgmToggleBtn.textContent = "🔇 BGM: OFF";
+        bgmPlayer.pause();
+      }
+    });
+
     wakeBtn.addEventListener("click", async () => {
       try {
         if (!("wakeLock" in navigator)) {
@@ -298,20 +552,24 @@
       }
     });
 
-    petBtn.addEventListener("click", () => {
-      bounceMarron();
-      showBubble("なでなで嬉しいな〜♪");
-    });
+    // 気まぐれ自律行動（待機中にお座り・伏せ・居眠りをランダム切り替え）
+    setInterval(() => {
+      if (!isUnlocked) return;
+      if (currentMotion === "sit" && Math.random() < 0.35) {
+        if (currentSlot === "midnight" || currentSlot === "night") {
+          playMotion("sleep", { loop: true, text: "うとうと…眠くなってきたワン…" });
+        } else {
+          playMotion("down", { loop: true, text: "ちょっと伏せてまったりしようっと" });
+        }
+      } else if ((currentMotion === "down" || currentMotion === "sleep") && Math.random() < 0.4) {
+        playMotion("sit", { loop: true, text: "むくり！お座りしたよ" });
+      }
+    }, 35000);
 
-    treatBtn.addEventListener("click", () => {
-      bounceMarron();
-      showBubble("おやつだ〜！モグモグ…おいしいワン！");
-    });
+    timeMode.addEventListener("change", syncRoomAndBgm);
 
-    timeMode.addEventListener("change", updateClockAndRoom);
-
-    updateClockAndRoom();
-    setInterval(updateClockAndRoom, 15000);
+    syncRoomAndBgm();
+    setInterval(syncRoomAndBgm, 15000);
     video.play().catch(() => {});
     renderChromaKey();
   </script>

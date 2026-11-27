@@ -177,7 +177,7 @@
       transition: width 0.25s ease, bottom 0.25s ease, opacity 0.2s ease;
     }
 
-    /* マロン本体（9:16縦長動画用） */
+    /* マロン本体（9:16縦長動画用：65vh） */
     .marron-canvas {
       position: absolute;
       left: 60%;
@@ -193,7 +193,7 @@
       filter: drop-shadow(0 10px 12px rgba(28, 16, 8, 0.42)) drop-shadow(0 2px 3px rgba(28, 16, 8, 0.25));
     }
 
-    /* 16:9横長動画用（sitと同じ体格になる高さに統一） */
+    /* 16:9横長動画用 */
     .marron-canvas.is-wide {
       height: 49vh;
       bottom: calc(6% + env(safe-area-inset-bottom));
@@ -205,33 +205,15 @@
       bottom: calc(3% + env(safe-area-inset-bottom));
     }
 
-    /* 画面ペロペロ（lick）：中央基準で素直に拡大・縮小する */
+    /* 画面ペロペロ（lick）：余計なキーフレームをやめてシンプルに中央配置で表示 */
     .marron-canvas.is-licking {
       left: 50%;
       bottom: calc(6% + env(safe-area-inset-bottom));
       width: auto;
-      height: 43vh;
-      transform-origin: center 55%;
+      height: 55vh;
+      transform: translateX(-50%);
+      transform-origin: center bottom;
       z-index: 8;
-      animation: lickApproach 10s ease-in-out forwards;
-    }
-
-    @keyframes lickApproach {
-      0%, 20% {
-        left: 50%;
-        bottom: calc(6% + env(safe-area-inset-bottom));
-        transform: translateX(-50%) scale(1);
-      }
-      45%, 72% {
-        left: 50%;
-        bottom: 2vh;
-        transform: translateX(-50%) scale(1.65);
-      }
-      92%, 100% {
-        left: 50%;
-        bottom: calc(6% + env(safe-area-inset-bottom));
-        transform: translateX(-50%) scale(1);
-      }
     }
 
     /* ミッドナイト（ベッド）時はカーペット中央に配置 */
@@ -602,7 +584,7 @@
         trot:    { src: "assets/marron_trot.mp4",    loop: false, lines: ["お部屋の中をトコトコお散歩〜♪", "ルンルン♪ 8の字ウォーキング！"] },
         stretch: { src: "assets/marron_stretch.mp4", loop: false, lines: ["ふぁ〜あ…ぐーっと背伸び〜！", "う〜ん！伸びをしてリフレッシュ！"] },
         trick:   { src: "assets/marron_trick.mp4",   loop: false, lines: ["お手！おかわり！…えへへ、お腹なでて〜♪", "特技を披露しちゃうワン！"] },
-        lick:    { src: "assets/marron_lick.mp4",    loop: false, lines: ["わーい！ペロペロ〜！（近い近い！）", "大好きだワン！ペロッ♪"] }
+        lick:    { src: "assets/marron_lick_2.mp4",  loop: false, lines: ["わーい！ペロペロ〜！（近い近い！）", "大好きだワン！ペロッ♪"] }
       }
     };
 
@@ -905,11 +887,6 @@
       const isTrot = motionKey === "trot";
       canvas.classList.toggle("is-sleeping", motionKey === "sleep");
       canvas.classList.toggle("is-licking", isLicking);
-      if (isLicking) {
-        canvas.style.animation = "none";
-        void canvas.offsetWidth;
-        canvas.style.animation = "";
-      }
       canvas.classList.toggle("is-trot", isTrot);
       floorShadow.style.opacity = isLicking ? "0" : "1";
 

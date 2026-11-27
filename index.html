@@ -6,11 +6,11 @@
   <title>マロンのお部屋パートナー</title>
   <style>
     :root {
-      --panel: rgba(34, 26, 20, 0.72);
-      --border: rgba(255, 232, 198, 0.28);
-      --text: #fff9f0;
+      --glass-bg: rgba(32, 24, 18, 0.56);
+      --glass-border: rgba(255, 236, 208, 0.32);
+      --text: #fffaf2;
       --accent: #f6b963;
-      --bubble-bg: rgba(255, 250, 240, 0.95);
+      --bubble-bg: rgba(255, 250, 240, 0.96);
       --bubble-text: #4a3525;
       --bubble-border: #e6c39c;
     }
@@ -53,7 +53,7 @@
       }
     }
 
-    /* パスコードロック画面（可愛いカフェ・肉球風デザイン） */
+    /* パスコードロック画面 (9648) */
     .lock-screen {
       position: fixed;
       inset: 0;
@@ -158,7 +158,7 @@
       height: 100%;
       object-fit: cover;
       pointer-events: none;
-      transition: opacity 0.6s ease;
+      transition: opacity 0.8s ease;
     }
 
     /* カーペットの中央にしっかり座る位置 */
@@ -174,14 +174,24 @@
       touch-action: none;
       cursor: grab;
       z-index: 4;
-      transition: bottom 0.25s ease, left 0.25s ease, transform 0.25s ease;
+      transition: bottom 0.3s ease, left 0.3s ease, transform 0.3s ease;
     }
 
-    /* おやすみ（ベッド）時は動画内の下余白分だけさらに下へ降ろしてカーペット中央に配置 */
+    /* ミッドナイト（ベッド）時はカーペット中央に配置 */
     .marron-canvas.is-sleeping {
       left: 62%;
       bottom: calc(1% + env(safe-area-inset-bottom));
       transform: translateX(-50%) scale(1.15);
+    }
+
+    /* なでなで中の微細なぷるぷる振動アニメーション */
+    .marron-canvas.is-petting {
+      animation: petPurrJitter 0.14s infinite alternate ease-in-out;
+    }
+
+    @keyframes petPurrJitter {
+      0%   { transform: translateX(calc(-50% - 1.5px)) rotate(-0.6deg); }
+      100% { transform: translateX(calc(-50% + 1.5px)) rotate(0.6deg); }
     }
 
     .marron-canvas:active {
@@ -212,49 +222,93 @@
       }
     }
 
+    /* おしゃれな上部HUD（時計・BGM・画面常時ONのみ） */
     .top-bar {
       position: absolute;
-      top: calc(12px + env(safe-area-inset-top));
-      left: 16px;
-      right: 16px;
+      top: calc(14px + env(safe-area-inset-top));
+      left: 18px;
+      right: 18px;
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      gap: 8px;
+      align-items: flex-start;
+      pointer-events: none;
       z-index: 10;
     }
 
-    .top-right {
+    /* おしゃれな時計カード */
+    .clock-card {
+      pointer-events: auto;
+      background: var(--glass-bg);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1.5px solid var(--glass-border);
+      border-radius: 20px;
+      padding: 8px 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .clock-date {
+      font-size: 11px;
+      font-weight: 600;
+      color: #f3d5ad;
+      letter-spacing: 0.06em;
+      opacity: 0.92;
+    }
+
+    .clock-time {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      line-height: 1.1;
+      font-variant-numeric: tabular-nums;
+      color: #fffaf2;
+      text-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    }
+
+    /* 右上の操作ピル群 */
+    .top-controls {
+      pointer-events: auto;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
     }
 
-    .clock-pill {
-      background: var(--panel);
-      backdrop-filter: blur(10px);
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      padding: 6px 14px;
-      font-size: 13px;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-    }
-
-    .time-select {
-      background: var(--panel);
-      backdrop-filter: blur(10px);
+    button.pill-btn {
+      background: var(--glass-bg);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
       color: var(--text);
-      border: 1px solid var(--border);
+      border: 1.5px solid var(--glass-border);
       border-radius: 999px;
-      padding: 6px 10px;
-      font-size: 12px;
+      padding: 9px 16px;
+      font-size: 12.5px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      cursor: pointer;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: transform 0.14s ease, background 0.2s ease, border-color 0.2s ease;
+    }
+
+    button.pill-btn:active {
+      transform: scale(0.94);
+    }
+
+    button.pill-btn.active {
+      background: rgba(246, 185, 99, 0.34);
+      border-color: rgba(255, 214, 153, 0.78);
+      color: #fff3dc;
     }
 
     /* しっぽ付きの可愛い吹き出しデザイン（マロンの頭よりずっと上に配置） */
     .reaction-bubble {
       position: absolute;
-      top: calc(31% + env(safe-area-inset-top));
+      top: calc(30% + env(safe-area-inset-top));
       left: 60%;
       transform: translateX(-50%) scale(0.88);
       background: var(--bubble-bg);
@@ -297,42 +351,6 @@
     .reaction-bubble.show {
       opacity: 1;
       transform: translateX(-50%) scale(1);
-    }
-
-    .bottom-controls {
-      position: absolute;
-      bottom: calc(14px + env(safe-area-inset-bottom));
-      left: 16px;
-      right: 16px;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 10px;
-      z-index: 10;
-    }
-
-    button.ctrl-btn {
-      background: var(--panel);
-      backdrop-filter: blur(10px);
-      color: var(--text);
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      padding: 8px 15px;
-      font-size: 13px;
-      font-weight: 600;
-      line-height: 1.2;
-      cursor: pointer;
-      transition: transform 0.12s ease, background 0.15s ease;
-    }
-
-    button.ctrl-btn:active {
-      transform: scale(0.95);
-    }
-
-    button.ctrl-btn.primary {
-      background: rgba(246, 185, 99, 0.34);
-      border-color: rgba(246, 185, 99, 0.78);
-      color: #ffe9c4;
     }
 
     video#sourceVideo {
@@ -382,29 +400,18 @@
     <canvas id="marronCanvas" class="marron-canvas"></canvas>
 
     <div class="top-bar">
-      <div class="clock-pill" id="clockText">--:--</div>
-      <div class="top-right">
-        <button class="ctrl-btn" id="bgmToggleBtn">🎵 BGM: ON</button>
-        <select class="time-select" id="timeMode" aria-label="時間帯モード">
-          <option value="auto">時間帯: 自動</option>
-          <option value="morning">朝 (morning)</option>
-          <option value="day">昼 (day)</option>
-          <option value="sunset">夕方 (sunset)</option>
-          <option value="night">夜 (night)</option>
-          <option value="midnight">深夜 (midnight)</option>
-        </select>
+      <div class="clock-card">
+        <div class="clock-date" id="clockDate">--/-- (---)</div>
+        <div class="clock-time" id="clockTime">--:--</div>
+      </div>
+
+      <div class="top-controls">
+        <button class="pill-btn active" id="bgmToggleBtn">🎵 BGM: ON</button>
+        <button class="pill-btn" id="wakeBtn">☀️ 画面常時ON</button>
       </div>
     </div>
 
     <div class="reaction-bubble" id="bubble">ワンワン！</div>
-
-    <div class="bottom-controls">
-      <button class="ctrl-btn primary" id="petBtn">🐾 なでる</button>
-      <button class="ctrl-btn primary" id="treatBtn">🦴 おやつ</button>
-      <button class="ctrl-btn primary" id="barkBtn">🐶 呼ぶ</button>
-      <button class="ctrl-btn" id="sleepBtn">💤 おやすみ</button>
-      <button class="ctrl-btn" id="wakeBtn">☀️ 画面常時ON</button>
-    </div>
   </div>
 
   <video id="sourceVideo" src="assets/marron_sit.mp4" autoplay loop playsinline></video>
@@ -423,12 +430,15 @@
       motions: {
         sit:   { src: "assets/marron_sit.mp4",   loop: true,  lines: ["ここでまったりしてるよ〜", "じーっ…（こっちを見ている）"] },
         down:  { src: "assets/marron_down.mp4",  loop: true,  lines: ["ちょっと伏せてのんびりしようっと", "カーペット気持ちいいな〜"] },
-        sleep: { src: "assets/marron_sleep.mp4", loop: true,  lines: ["すやすや…おやすみ〜…", "うとうと…眠くなってきたワン…"] },
+        bark:  { src: "assets/marron_bark.mp4",  loop: false, lines: ["ワンワン！", "ワン！（こっち見てるよ！）"] },
+        sweet: { src: "assets/marron_sweet.mp4", loop: false, lines: ["クゥ〜ン…甘えさせて〜", "寂しいよぉ…もっと撫でて〜", "クゥン…そばにいてほしいワン…"] },
         pet:   { src: "assets/marron_pet.mp4",   loop: false, lines: ["なでなで気持ちいいな〜♪", "えへへ、もっと撫でて〜"] },
-        sweet: { src: "assets/marron_sweet.mp4", loop: false, lines: ["おやつだ！モグモグ…おいしいワン！", "わーい！大好物だ〜！"] },
-        bark:  { src: "assets/marron_bark.mp4",  loop: false, lines: ["ワンワン！", "ワン！（こっち見てるよ！）"] }
+        sleep: { src: "assets/marron_sleep.mp4", loop: true,  lines: ["すやすや…おやすみ〜…", "Zzz…夢の中だワン…"] }
       }
     };
+
+    // 起きてる時間のランダム候補（sit, down, bark, sweet の4種のみ）
+    const AWAKE_RANDOM_MOTIONS = ["sit", "down", "bark", "sweet"];
 
     // ロック画面処理
     let inputCode = "";
@@ -477,8 +487,8 @@
     // メインアプリ要素
     const stage = document.getElementById("stage");
     const roomImg = document.getElementById("roomImg");
-    const clockText = document.getElementById("clockText");
-    const timeMode = document.getElementById("timeMode");
+    const clockDate = document.getElementById("clockDate");
+    const clockTime = document.getElementById("clockTime");
     const bubble = document.getElementById("bubble");
     const bgmToggleBtn = document.getElementById("bgmToggleBtn");
     const wakeBtn = document.getElementById("wakeBtn");
@@ -494,7 +504,7 @@
     let bubbleTimer = null;
     let randomMotionTimer = null;
 
-    // Web Audio API を使ったBGM再生（動画の音声と同時再生させるため）
+    // Web Audio API（BGM同時再生 ＋ なでなで時の擬似ハプティクス振動音）
     let audioCtx = null;
     let bgmGainNode = null;
     let bgmSourceNode = null;
@@ -512,6 +522,30 @@
       if (audioCtx.state === "suspended") {
         audioCtx.resume().catch(() => {});
       }
+    }
+
+    // 指で撫でたときに「ブブブブ…」と低く心地よいハプティクス風振動音を鳴らす
+    function playPetHapticPulse() {
+      if (!audioCtx || audioCtx.state !== "running") return;
+      try {
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(68, now);
+        osc.frequency.exponentialRampToValueAtTime(42, now + 0.055);
+
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.16, now + 0.012);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.065);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.07);
+      } catch (e) {}
     }
 
     function stopBgmNode() {
@@ -552,7 +586,7 @@
       }
     }
 
-    function showBubble(text, duration = 2600) {
+    function showBubble(text, duration = 2800) {
       if (!text) return;
       bubble.textContent = text;
       bubble.classList.add("show");
@@ -579,13 +613,20 @@
       return "midnight";
     }
 
-    function syncRoomAndBgm() {
+    const WEEKDAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+
+    function syncClockRoomAndBgm() {
       const now = new Date();
+      const mon = now.getMonth() + 1;
+      const day = now.getDate();
+      const wday = WEEKDAYS[now.getDay()];
       const hh = String(now.getHours()).padStart(2, "0");
       const mm = String(now.getMinutes()).padStart(2, "0");
-      clockText.textContent = `${hh}:${mm}`;
 
-      const slot = timeMode.value === "auto" ? getAutoSlot(now.getHours()) : timeMode.value;
+      clockDate.textContent = `${mon}/${day} (${wday})`;
+      clockTime.textContent = `${hh}:${mm}`;
+
+      const slot = getAutoSlot(now.getHours());
       const asset = ASSETS.slots[slot] || ASSETS.slots.day;
 
       if (roomImg.getAttribute("src") !== asset.room) {
@@ -593,9 +634,19 @@
       }
 
       if (currentSlot !== slot) {
+        const prevSlot = currentSlot;
         currentSlot = slot;
+
         if (isUnlocked) {
           playSlotBgm(asset.bgm);
+
+          // ミッドナイトに入ったら強制的に寝る、ミッドナイトが明けたら起きる
+          if (slot === "midnight") {
+            playMotion("sleep", { customText: "すやすや…おやすみなさい…", silentBubble: prevSlot === "" });
+          } else if (prevSlot === "midnight") {
+            playMotion("bark", { customText: "ワン！おはよう〜！" });
+            scheduleNextRandomMotion();
+          }
         }
       }
     }
@@ -620,37 +671,48 @@
       }
     }
 
-    // 単発アクション動画（bark, pet, sweet）が終わったらお座りへ戻る
+    // 単発アクション動画（bark, pet, sweet）が終わったら、深夜ならsleep、それ以外はsitへ戻る
     video.addEventListener("ended", () => {
       if (!video.loop) {
-        playMotion("sit", { silentBubble: true });
+        if (currentSlot === "midnight") {
+          playMotion("sleep", { silentBubble: true });
+        } else {
+          playMotion("sit", { silentBubble: true });
+        }
       }
     });
 
-    // 全6種類の動画をランダムな間隔で自由に切り替えるスケジューラー
+    // ミッドナイト以外の時間帯だけ、起きてる4種（sit, down, bark, sweet）をランダム切替
     function scheduleNextRandomMotion() {
       clearTimeout(randomMotionTimer);
       const nextDelay = 12000 + Math.floor(Math.random() * 12000);
       randomMotionTimer = setTimeout(() => {
         if (isUnlocked) {
-          const allKeys = Object.keys(ASSETS.motions);
-          const candidates = allKeys.filter((k) => k !== currentMotion);
-          const nextKey = candidates[Math.floor(Math.random() * candidates.length)];
-          playMotion(nextKey);
+          if (currentSlot === "midnight") {
+            if (currentMotion !== "sleep") {
+              playMotion("sleep", { silentBubble: true });
+            }
+          } else {
+            const candidates = AWAKE_RANDOM_MOTIONS.filter((k) => k !== currentMotion);
+            const nextKey = candidates[Math.floor(Math.random() * candidates.length)];
+            playMotion(nextKey);
+          }
         }
         scheduleNextRandomMotion();
       }, nextDelay);
     }
 
-    // 直接指でなでなで＆タップする操作
+    // 直接指でなでなで（ハプティクス音＋微振動＋petモーション）＆タップ操作
     let isPointerDown = false;
     let strokeDistance = 0;
     let lastPos = null;
     let lastParticleTime = 0;
+    let lastHapticTime = 0;
     let petTriggeredInStroke = false;
 
     canvas.addEventListener("pointerdown", (e) => {
       if (!isUnlocked) return;
+      initAudioContext();
       isPointerDown = true;
       strokeDistance = 0;
       petTriggeredInStroke = false;
@@ -662,32 +724,53 @@
       if (!isPointerDown || !lastPos || !isUnlocked) return;
       const dx = e.clientX - lastPos.x;
       const dy = e.clientY - lastPos.y;
-      strokeDistance += Math.hypot(dx, dy);
+      const step = Math.hypot(dx, dy);
+      strokeDistance += step;
       lastPos = { x: e.clientX, y: e.clientY };
 
       const now = Date.now();
-      if (strokeDistance > 16 && now - lastParticleTime > 160) {
+
+      // なでている間、一定リズムで「ブブブブ…」というハプティクス振動音と揺れを発生
+      if (step > 1.5 && now - lastHapticTime > 75) {
+        lastHapticTime = now;
+        playPetHapticPulse();
+        canvas.classList.add("is-petting");
+      }
+
+      if (strokeDistance > 14 && now - lastParticleTime > 150) {
         lastParticleTime = now;
         spawnPetParticle(e.clientX, e.clientY);
       }
 
-      if (strokeDistance > 36 && !petTriggeredInStroke) {
+      // 撫でられたときだけ marron_pet.mp4 を再生（深夜に寝ているときは起こさず寝言リアクション）
+      if (strokeDistance > 32 && !petTriggeredInStroke) {
         petTriggeredInStroke = true;
-        if (currentMotion !== "pet") {
-          playMotion("pet");
+        if (currentSlot === "midnight") {
+          showBubble("んぅ…なでなで…すやすや…");
         } else {
-          showBubble("そこそこ〜♪ もっと撫でて〜");
+          if (currentMotion !== "pet") {
+            playMotion("pet");
+          } else {
+            showBubble("そこそこ〜♪ もっと撫でて〜");
+          }
+          scheduleNextRandomMotion();
         }
-        scheduleNextRandomMotion();
       }
     });
 
     function endPointerStroke(e) {
       if (!isPointerDown) return;
-      if (!petTriggeredInStroke && strokeDistance <= 16 && isUnlocked) {
+      canvas.classList.remove("is-petting");
+
+      // ほとんど動かずに軽くタップしたとき
+      if (!petTriggeredInStroke && strokeDistance <= 14 && isUnlocked) {
         spawnPetParticle(e.clientX, e.clientY);
-        playMotion("bark", { customText: "ワン！（呼んだ？）" });
-        scheduleNextRandomMotion();
+        if (currentSlot === "midnight") {
+          showBubble("Zzz…むにゃむにゃ…");
+        } else {
+          playMotion("bark", { customText: "ワン！（呼んだ？）" });
+          scheduleNextRandomMotion();
+        }
       }
       isPointerDown = false;
       lastPos = null;
@@ -722,7 +805,7 @@
 
     function startAppAfterUnlock() {
       initAudioContext();
-      const slot = timeMode.value === "auto" ? getAutoSlot(new Date().getHours()) : timeMode.value;
+      const slot = getAutoSlot(new Date().getHours());
       const asset = ASSETS.slots[slot] || ASSETS.slots.day;
       currentSlot = slot;
       roomImg.src = asset.room;
@@ -730,36 +813,14 @@
 
       video.muted = false;
       video.volume = 0.9;
-      playMotion("bark", { customText: "ワンワン！（おかえり〜！）" });
-      scheduleNextRandomMotion();
-    }
 
-    // アクションボタン
-    document.getElementById("petBtn").addEventListener("click", () => {
-      const rect = canvas.getBoundingClientRect();
-      spawnPetParticle(rect.left + rect.width * 0.5, rect.top + rect.height * 0.3);
-      playMotion("pet");
-      scheduleNextRandomMotion();
-    });
-
-    document.getElementById("treatBtn").addEventListener("click", () => {
-      playMotion("sweet");
-      scheduleNextRandomMotion();
-    });
-
-    document.getElementById("barkBtn").addEventListener("click", () => {
-      playMotion("bark");
-      scheduleNextRandomMotion();
-    });
-
-    document.getElementById("sleepBtn").addEventListener("click", () => {
-      if (currentMotion === "sleep") {
-        playMotion("sit", { customText: "ふわぁ…起きたよ！" });
+      if (slot === "midnight") {
+        playMotion("sleep", { customText: "すやすや…もう夜遅いよ…Zzz" });
       } else {
-        playMotion("sleep", { customText: "すやすや…おやすみ〜…" });
+        playMotion("bark", { customText: "ワンワン！（おかえり〜！）" });
       }
       scheduleNextRandomMotion();
-    });
+    }
 
     bgmToggleBtn.addEventListener("click", () => {
       bgmEnabled = !bgmEnabled;
@@ -768,6 +829,7 @@
         bgmGainNode.gain.value = bgmEnabled ? 0.45 : 0;
       }
       bgmToggleBtn.textContent = bgmEnabled ? "🎵 BGM: ON" : "🔇 BGM: OFF";
+      bgmToggleBtn.classList.toggle("active", bgmEnabled);
     });
 
     wakeBtn.addEventListener("click", async () => {
@@ -779,10 +841,12 @@
         if (!wakeLock) {
           wakeLock = await navigator.wakeLock.request("screen");
           wakeBtn.textContent = "☀️ 常時ON中";
+          wakeBtn.classList.add("active");
           showBubble("画面を起こしたまま一緒にいるね");
           wakeLock.addEventListener("release", () => {
             wakeLock = null;
             wakeBtn.textContent = "☀️ 画面常時ON";
+            wakeBtn.classList.remove("active");
           });
         } else {
           await wakeLock.release();
@@ -802,10 +866,8 @@
       }
     });
 
-    timeMode.addEventListener("change", syncRoomAndBgm);
-
-    syncRoomAndBgm();
-    setInterval(syncRoomAndBgm, 15000);
+    syncClockRoomAndBgm();
+    setInterval(syncClockRoomAndBgm, 10000);
     video.muted = true;
     video.play().catch(() => {});
     renderChromaKey();

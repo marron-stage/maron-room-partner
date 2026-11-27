@@ -161,11 +161,11 @@
       transition: opacity 0.6s ease;
     }
 
-    /* ラグの上にちょうど座るサイズと位置（直接タッチ・なでなで有効） */
+    /* カーペットの中央にしっかり座る・寝る位置 */
     .marron-canvas {
       position: absolute;
-      left: 55%;
-      bottom: calc(15% + env(safe-area-inset-bottom));
+      left: 59%;
+      bottom: calc(9% + env(safe-area-inset-bottom));
       width: min(21vw, 29vh, 210px);
       height: auto;
       transform: translateX(-50%);
@@ -174,6 +174,11 @@
       touch-action: none;
       cursor: grab;
       z-index: 4;
+      transition: transform 0.25s ease;
+    }
+
+    .marron-canvas.is-sleeping {
+      transform: translateX(-50%) scale(1.12);
     }
 
     .marron-canvas:active {
@@ -243,11 +248,11 @@
       font-size: 12px;
     }
 
-    /* しっぽ付きの可愛い吹き出しデザイン */
+    /* しっぽ付きの可愛い吹き出しデザイン（マロンの頭とかぶらない高さ） */
     .reaction-bubble {
       position: absolute;
-      bottom: calc(15% + min(21vw, 29vh, 210px) + 12px + env(safe-area-inset-bottom));
-      left: 55%;
+      bottom: calc(9% + min(21vw, 29vh, 210px) + 34px + env(safe-area-inset-bottom));
+      left: 59%;
       transform: translateX(-50%) scale(0.88);
       background: var(--bubble-bg);
       color: var(--bubble-text);
@@ -414,7 +419,7 @@
       },
       motions: {
         sit:   { src: "assets/marron_sit.mp4",   loop: true,  lines: ["ここでまったりしてるよ〜", "じーっ…（こっちを見ている）"] },
-        down:  { src: "assets/marron_down.mp4",  loop: true,  lines: ["ちょっと伏せてのんびりしようっと", "床が気持ちいいな〜"] },
+        down:  { src: "assets/marron_down.mp4",  loop: true,  lines: ["ちょっと伏せてのんびりしようっと", "カーペット気持ちいいな〜"] },
         sleep: { src: "assets/marron_sleep.mp4", loop: true,  lines: ["すやすや…おやすみ〜…", "うとうと…眠くなってきたワン…"] },
         pet:   { src: "assets/marron_pet.mp4",   loop: false, lines: ["なでなで気持ちいいな〜♪", "えへへ、もっと撫でて〜"] },
         sweet: { src: "assets/marron_sweet.mp4", loop: false, lines: ["おやつだ！モグモグ…おいしいワン！", "わーい！大好物だ〜！"] },
@@ -598,6 +603,7 @@
       if (!motion) return;
 
       currentMotion = motionKey;
+      canvas.classList.toggle("is-sleeping", motionKey === "sleep");
       video.loop = motion.loop;
       video.src = motion.src;
       video.load();
@@ -675,7 +681,6 @@
 
     function endPointerStroke(e) {
       if (!isPointerDown) return;
-      // ほとんど動かずに離した場合は「軽くタップ」とみなしてワン！と反応
       if (!petTriggeredInStroke && strokeDistance <= 16 && isUnlocked) {
         spawnPetParticle(e.clientX, e.clientY);
         playMotion("bark", { customText: "ワン！（呼んだ？）" });

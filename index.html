@@ -44,26 +44,11 @@
       pointer-events: none;
     }
 
-    /* 足元の接地影（足裏のラインに合わせる） */
-    .ground-shadow {
-      position: absolute;
-      left: 50%;
-      bottom: calc(13.5% + env(safe-area-inset-bottom));
-      width: min(32vw, 28vh, 210px);
-      height: min(4.8vw, 4.2vh, 32px);
-      transform: translateX(-50%);
-      border-radius: 50%;
-      background: radial-gradient(ellipse at center, rgba(28, 17, 8, 0.48) 0%, rgba(28, 17, 8, 0.18) 58%, rgba(28, 17, 8, 0) 78%);
-      filter: blur(2.5px);
-      pointer-events: none;
-      z-index: 2;
-    }
-
     /* 縦・横どちらでも大きさが揃うように調整 */
     .marron-canvas {
       position: absolute;
       left: 50%;
-      bottom: calc(14.5% + env(safe-area-inset-bottom));
+      bottom: calc(12% + env(safe-area-inset-bottom));
       width: min(58vw, 48vh, 360px);
       height: auto;
       transform: translateX(-50%);
@@ -138,7 +123,6 @@
       opacity: 1;
     }
 
-    /* 下部ボタンが確実に画面内に収まるように配置 */
     .bottom-controls {
       position: absolute;
       bottom: calc(18px + env(safe-area-inset-bottom));
@@ -183,7 +167,6 @@
 <body>
   <div class="full-stage" id="stage">
     <img id="roomImg" class="room-layer" src="assets/room_day.png" alt="マロンのお部屋" />
-    <div class="ground-shadow" aria-hidden="true"></div>
     <canvas id="marronCanvas" class="marron-canvas"></canvas>
 
     <div class="top-bar">

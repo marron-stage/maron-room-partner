@@ -6,11 +6,9 @@
   <title>マロンのお部屋パートナー</title>
   <style>
     :root {
-      --bg: #111318;
-      --panel: rgba(20, 24, 34, 0.72);
-      --border: rgba(255, 255, 255, 0.14);
-      --text: #f4f6fb;
-      --muted: #aab3c5;
+      --panel: rgba(18, 22, 32, 0.62);
+      --border: rgba(255, 255, 255, 0.16);
+      --text: #f6f8fc;
       --accent: #f6b963;
     }
 
@@ -23,61 +21,50 @@
     html, body {
       margin: 0;
       padding: 0;
-      width: 100%;
-      height: 100%;
-      background: var(--bg);
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: #0d1017;
       color: var(--text);
       font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif;
-      overflow: hidden;
     }
 
-    .app {
+    .full-stage {
+      position: relative;
       width: 100%;
       height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 12px;
-      gap: 16px;
-    }
-
-    /* 9:16 部屋ステージ */
-    .stage-wrap {
-      position: relative;
-      height: 100%;
-      max-height: 100%;
-      aspect-ratio: 9 / 16;
-      max-width: 100%;
-      border-radius: 24px;
       overflow: hidden;
-      background: #000;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
-      border: 1px solid var(--border);
-      perspective: 900px;
     }
 
     .room-layer {
       position: absolute;
-      inset: -6%;
-      width: 112%;
-      height: 112%;
+      inset: -3%;
+      width: 106%;
+      height: 106%;
       object-fit: cover;
-      transform: translate3d(0px, 0px, 0px) scale(1.03);
-      transition: opacity 0.5s ease, transform 0.08s linear;
       pointer-events: none;
+      will-change: transform;
     }
 
     .marron-canvas {
       position: absolute;
       left: 50%;
-      bottom: 8%;
-      width: 72%;
+      bottom: 7%;
+      width: min(70vw, 420px);
+      max-width: 78%;
       height: auto;
-      transform: translate3d(-50%, 0px, 40px) scale(1);
+      transform: translate3d(-50%, 0px, 0px);
       transform-origin: center bottom;
-      transition: transform 0.08s linear;
       pointer-events: none;
-      filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.35));
+      filter: drop-shadow(0 12px 20px rgba(0, 0, 0, 0.35));
+      will-change: transform;
+    }
+
+    @media (orientation: landscape) {
+      .marron-canvas {
+        width: min(36vh, 360px);
+        bottom: 6%;
+      }
     }
 
     .marron-canvas.bounce {
@@ -85,13 +72,12 @@
     }
 
     @keyframes marronBounce {
-      0%   { transform: translate3d(-50%, 0px, 40px) scale(1, 1); }
-      35%  { transform: translate3d(-50%, -18px, 40px) scale(1.06, 0.94); }
-      70%  { transform: translate3d(-50%, 4px, 40px) scale(0.97, 1.03); }
-      100% { transform: translate3d(-50%, 0px, 40px) scale(1, 1); }
+      0%   { transform: translate3d(calc(-50% + var(--mx, 0px)), 0px, 0px) scale(1, 1); }
+      35%  { transform: translate3d(calc(-50% + var(--mx, 0px)), -18px, 0px) scale(1.06, 0.94); }
+      70%  { transform: translate3d(calc(-50% + var(--mx, 0px)), 4px, 0px) scale(0.97, 1.03); }
+      100% { transform: translate3d(calc(-50% + var(--mx, 0px)), 0px, 0px) scale(1, 1); }
     }
 
-    /* オーバーレイUI（縦置きでも邪魔にならない最小構成） */
     .top-bar {
       position: absolute;
       top: 12px;
@@ -177,48 +163,9 @@
     }
 
     button.primary {
-      background: rgba(246, 185, 99, 0.25);
-      border-color: rgba(246, 185, 99, 0.6);
-      color: #ffe2b3;
-    }
-
-    /* 横画面の時は横にステータスパネルを表示 */
-    .side-panel {
-      display: none;
-      width: 260px;
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 18px;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    @media (orientation: landscape) and (min-width: 768px) {
-      .side-panel {
-        display: flex;
-      }
-    }
-
-    .side-title {
-      font-size: 15px;
-      font-weight: 700;
-      margin: 0;
-    }
-
-    .side-note {
-      font-size: 12px;
-      color: var(--muted);
-      line-height: 1.6;
-      margin: 0;
-    }
-
-    .status-row {
-      display: flex;
-      justify-content: space-between;
-      font-size: 13px;
-      padding: 6px 0;
-      border-bottom: 1px solid rgba(255,255,255,0.07);
+      background: rgba(246, 185, 99, 0.28);
+      border-color: rgba(246, 185, 99, 0.65);
+      color: #ffe5b8;
     }
 
     video#sourceVideo {
@@ -227,51 +174,30 @@
   </style>
 </head>
 <body>
-  <div class="app">
-    <div class="stage-wrap" id="stage">
-      <img id="roomImg" class="room-layer" src="assets/room_day.png" alt="マロンのお部屋" />
-      <canvas id="marronCanvas" class="marron-canvas"></canvas>
+  <div class="full-stage" id="stage">
+    <img id="roomImg" class="room-layer" src="assets/room_day.png" alt="マロンのお部屋" />
+    <canvas id="marronCanvas" class="marron-canvas"></canvas>
 
-      <div class="top-bar">
-        <div class="clock-pill" id="clockText">--:--</div>
-        <select class="time-select" id="timeMode" aria-label="時間帯モード">
-          <option value="auto">時間帯: 自動</option>
-          <option value="morning">朝 (morning)</option>
-          <option value="day">昼 (day)</option>
-          <option value="sunset">夕方 (sunset)</option>
-          <option value="night">夜 (night)</option>
-          <option value="midnight">深夜 (midnight)</option>
-        </select>
-      </div>
-
-      <div class="reaction-bubble" id="bubble">ワン！</div>
-
-      <div class="bottom-controls">
-        <button class="primary" id="petBtn">🐾 なでる</button>
-        <button class="primary" id="treatBtn">🦴 おやつ</button>
-        <button id="gyroBtn">📐 視差ON</button>
-        <button id="wakeBtn">☀️ 画面常時ON</button>
-      </div>
+    <div class="top-bar">
+      <div class="clock-pill" id="clockText">--:--</div>
+      <select class="time-select" id="timeMode" aria-label="時間帯モード">
+        <option value="auto">時間帯: 自動</option>
+        <option value="morning">朝 (morning)</option>
+        <option value="day">昼 (day)</option>
+        <option value="sunset">夕方 (sunset)</option>
+        <option value="night">夜 (night)</option>
+        <option value="midnight">深夜 (midnight)</option>
+      </select>
     </div>
 
-    <aside class="side-panel">
-      <h2 class="side-title">マロンのお部屋パートナー</h2>
-      <p class="side-note">
-        カメラは使わず、ジャイロ（傾き）とタップだけで寄り添う省エネ構成です。
-      </p>
-      <div class="status-row">
-        <span>ご機嫌度</span>
-        <strong id="moodVal">70</strong>
-      </div>
-      <div class="status-row">
-        <span>今の部屋</span>
-        <strong id="roomLabel">昼</strong>
-      </div>
-      <div class="status-row">
-        <span>画面スリープ防止</span>
-        <strong id="wakeStatus">OFF</strong>
-      </div>
-    </aside>
+    <div class="reaction-bubble" id="bubble">ワン！</div>
+
+    <div class="bottom-controls">
+      <button class="primary" id="petBtn">🐾 なでる</button>
+      <button class="primary" id="treatBtn">🦴 おやつ</button>
+      <button id="parallaxBtn">👁️ 視差: 弱</button>
+      <button id="wakeBtn">☀️ 画面常時ON</button>
+    </div>
   </div>
 
   <video id="sourceVideo" src="assets/marron_sit.mp4" autoplay loop muted playsinline></video>
@@ -279,34 +205,35 @@
   <script>
     const ASSETS = {
       rooms: {
-        morning:  { src: "assets/room_morning.png",  label: "朝" },
-        day:      { src: "assets/room_day.png",      label: "昼" },
-        sunset:   { src: "assets/room_sunset.png",   label: "夕方" },
-        night:    { src: "assets/room_night.png",    label: "夜" },
-        midnight: { src: "assets/room_midnight.png", label: "深夜" }
+        morning:  "assets/room_morning.png",
+        day:      "assets/room_day.png",
+        sunset:   "assets/room_sunset.png",
+        night:    "assets/room_night.png",
+        midnight: "assets/room_midnight.png"
       },
       sitVideo: "assets/marron_sit.mp4"
     };
 
     const roomImg = document.getElementById("roomImg");
-    const roomLabel = document.getElementById("roomLabel");
     const clockText = document.getElementById("clockText");
     const timeMode = document.getElementById("timeMode");
     const bubble = document.getElementById("bubble");
-    const moodVal = document.getElementById("moodVal");
     const petBtn = document.getElementById("petBtn");
     const treatBtn = document.getElementById("treatBtn");
-    const gyroBtn = document.getElementById("gyroBtn");
+    const parallaxBtn = document.getElementById("parallaxBtn");
     const wakeBtn = document.getElementById("wakeBtn");
-    const wakeStatus = document.getElementById("wakeStatus");
 
     const video = document.getElementById("sourceVideo");
     const canvas = document.getElementById("marronCanvas");
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
-    let mood = 70;
-    let tiltX = 0;
-    let tiltY = 0;
+    const parallaxLevels = [
+      { label: "👁️ 視差: 弱", amp: 3.5, speed: 0.0018 },
+      { label: "👁️ 視差: 中", amp: 7.0, speed: 0.0022 },
+      { label: "👁️ 視差: OFF", amp: 0, speed: 0 }
+    ];
+    let parallaxIdx = 0;
+
     let wakeLock = null;
     let bubbleTimer = null;
 
@@ -315,11 +242,6 @@
       bubble.classList.add("show");
       clearTimeout(bubbleTimer);
       bubbleTimer = setTimeout(() => bubble.classList.remove("show"), 2400);
-    }
-
-    function changeMood(delta) {
-      mood = Math.max(0, Math.min(100, mood + delta));
-      moodVal.textContent = mood;
     }
 
     function bounceMarron() {
@@ -343,14 +265,12 @@
       clockText.textContent = `${hh}:${mm}`;
 
       const mode = timeMode.value === "auto" ? getAutoSlot(now.getHours()) : timeMode.value;
-      const info = ASSETS.rooms[mode] || ASSETS.rooms.day;
-      if (roomImg.getAttribute("src") !== info.src) {
-        roomImg.src = info.src;
+      const nextSrc = ASSETS.rooms[mode] || ASSETS.rooms.day;
+      if (roomImg.getAttribute("src") !== nextSrc) {
+        roomImg.src = nextSrc;
       }
-      roomLabel.textContent = info.label;
     }
 
-    // 青背景の簡易クロマキー（青成分が赤・緑より強いピクセルを透明化）
     function renderChromaKey() {
       if (video.readyState >= 2 && video.videoWidth > 0) {
         if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
@@ -365,7 +285,6 @@
           const r = data[i];
           const g = data[i + 1];
           const b = data[i + 2];
-          // 青が強く、赤と緑が抑えられている領域を透過
           if (b > 95 && b - Math.max(r, g) > 35) {
             data[i + 3] = 0;
           }
@@ -375,53 +294,27 @@
       requestAnimationFrame(renderChromaKey);
     }
 
-    // 3D視差の反映（奥の部屋は小さく、手前のマロンは少し大きく動かす）
-    function applyParallax() {
-      const bgX = (-tiltX * 14).toFixed(1);
-      const bgY = (-tiltY * 14).toFixed(1);
-      roomImg.style.transform = `translate3d(${bgX}px, ${bgY}px, 0px) scale(1.05)`;
+    // ジャイロを使わず、奥の部屋と手前のマロンで左右の視差オフセットを微動させる
+    function animateStereoShift(nowMs) {
+      const level = parallaxLevels[parallaxIdx];
+      const wave = Math.sin(nowMs * level.speed);
+      const roomShift = (-wave * level.amp * 0.6).toFixed(2);
+      const marronShift = (wave * level.amp).toFixed(2);
 
-      const fgX = (tiltX * 10).toFixed(1);
-      const fgY = (tiltY * 8).toFixed(1);
+      roomImg.style.transform = `translate3d(${roomShift}px, 0px, 0px) scale(1.04)`;
+      canvas.style.setProperty("--mx", `${marronShift}px`);
       if (!canvas.classList.contains("bounce")) {
-        canvas.style.transform = `translate3d(calc(-50% + ${fgX}px), ${fgY}px, 40px) scale(1)`;
+        canvas.style.transform = `translate3d(calc(-50% + ${marronShift}px), 0px, 0px)`;
       }
+      requestAnimationFrame(animateStereoShift);
     }
 
-    // PCやタッチ操作での擬似視差
-    document.getElementById("stage").addEventListener("pointermove", (e) => {
-      const rect = e.currentTarget.getBoundingClientRect();
-      tiltX = ((e.clientX - rect.left) / rect.width - 0.5) * 2;
-      tiltY = ((e.clientY - rect.top) / rect.height - 0.5) * 2;
-      applyParallax();
+    parallaxBtn.addEventListener("click", () => {
+      parallaxIdx = (parallaxIdx + 1) % parallaxLevels.length;
+      parallaxBtn.textContent = parallaxLevels[parallaxIdx].label;
+      showBubble(parallaxLevels[parallaxIdx].label.replace("👁️ ", "") + " に切り替えたよ");
     });
 
-    // iOS / iPadOS ジャイロ許可
-    gyroBtn.addEventListener("click", async () => {
-      try {
-        if (typeof DeviceOrientationEvent !== "undefined" &&
-            typeof DeviceOrientationEvent.requestPermission === "function") {
-          const res = await DeviceOrientationEvent.requestPermission();
-          if (res !== "granted") {
-            showBubble("傾きセンサーが許可されなかったよ");
-            return;
-          }
-        }
-        window.addEventListener("deviceorientation", (ev) => {
-          if (ev.gamma !== null && ev.beta !== null) {
-            tiltX = Math.max(-1, Math.min(1, ev.gamma / 25));
-            tiltY = Math.max(-1, Math.min(1, (ev.beta - 45) / 25));
-            applyParallax();
-          }
-        });
-        gyroBtn.textContent = "📐 視差稼働中";
-        showBubble("傾きに合わせてお部屋が動くよ！");
-      } catch (err) {
-        showBubble("この環境では傾きセンサーが使えないみたい");
-      }
-    });
-
-    // 画面スリープ防止（Wake Lock）
     wakeBtn.addEventListener("click", async () => {
       try {
         if (!("wakeLock" in navigator)) {
@@ -430,12 +323,10 @@
         }
         if (!wakeLock) {
           wakeLock = await navigator.wakeLock.request("screen");
-          wakeStatus.textContent = "ON";
           wakeBtn.textContent = "☀️ 常時ON中";
-          showBubble("ずっと一緒にいられるように画面を起こしておくね");
+          showBubble("画面を起こしたまま一緒にいるね");
           wakeLock.addEventListener("release", () => {
             wakeLock = null;
-            wakeStatus.textContent = "OFF";
             wakeBtn.textContent = "☀️ 画面常時ON";
           });
         } else {
@@ -447,37 +338,22 @@
     });
 
     petBtn.addEventListener("click", () => {
-      changeMood(5);
       bounceMarron();
-      showBubble("なでなで嬉しいな〜♪（しっぽフリフリ）");
+      showBubble("なでなで嬉しいな〜♪");
     });
 
     treatBtn.addEventListener("click", () => {
-      changeMood(10);
       bounceMarron();
       showBubble("おやつだ〜！モグモグ…おいしいワン！");
     });
 
     timeMode.addEventListener("change", updateClockAndRoom);
 
-    // 気まぐれなひとりごと（カメラなしでも生きている感じを出す）
-    setInterval(() => {
-      const lines = [
-        "ここでまったりしてるよ〜",
-        "ふあっ…ちょっと眠いかも",
-        "今日もゆっくり過ごそうね",
-        "じーっ…（こっちを見ている）"
-      ];
-      if (!bubble.classList.contains("show") && Math.random() < 0.45) {
-        bounceMarron();
-        showBubble(lines[Math.floor(Math.random() * lines.length)]);
-      }
-    }, 22000);
-
     updateClockAndRoom();
     setInterval(updateClockAndRoom, 15000);
     video.play().catch(() => {});
     renderChromaKey();
+    requestAnimationFrame(animateStereoShift);
   </script>
 </body>
 </html>

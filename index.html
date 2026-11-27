@@ -177,11 +177,11 @@
       transition: width 0.25s ease, bottom 0.25s ease, opacity 0.2s ease;
     }
 
-    /* マロン本体（9:16縦長動画用：60vh） */
+    /* マロン本体（9:16縦長動画用：下の余白分を考慮して少し下に配置） */
     .marron-canvas {
       position: absolute;
       left: 60%;
-      bottom: calc(5% + env(safe-area-inset-bottom));
+      bottom: calc(1.5% + env(safe-area-inset-bottom));
       width: auto;
       height: 60vh;
       transform: translateX(-50%);
@@ -193,27 +193,35 @@
       filter: drop-shadow(0 10px 12px rgba(28, 16, 8, 0.42)) drop-shadow(0 2px 3px rgba(28, 16, 8, 0.25));
     }
 
-    /* 16:9横長動画用（43vh） */
+    /* 16:9横長動画用（足元の位置が9:16とぴったり合う位置） */
     .marron-canvas.is-wide {
       height: 43vh;
-      bottom: calc(6% + env(safe-area-inset-bottom));
+      bottom: calc(6.5% + env(safe-area-inset-bottom));
     }
 
-    /* 画面ペロペロ（lick）時は画面いっぱいに広げて目の前のガラスを舐めている演出にする */
+    /* 8の字歩き（trot）は小ぶりに描かれているため大きく表示 */
+    .marron-canvas.is-trot {
+      height: 68vh;
+      bottom: calc(3% + env(safe-area-inset-bottom));
+    }
+
+    /* 画面ペロペロ（lick）時は最大ズームで画面全体をベロベロ舐める迫力サイズ */
     .marron-canvas.is-licking {
       left: 50%;
-      bottom: 0;
+      bottom: -8vh;
       width: 100vw;
       height: 100dvh;
       object-fit: cover;
+      transform: translateX(-50%) scale(1.75);
+      transform-origin: center center;
       z-index: 8;
     }
 
     /* ミッドナイト（ベッド）時はカーペット中央に配置 */
     .marron-canvas.is-sleeping {
       left: 62%;
-      bottom: calc(4% + env(safe-area-inset-bottom));
-      height: 48vh;
+      bottom: calc(1% + env(safe-area-inset-bottom));
+      height: 52vh;
     }
 
     .marron-canvas:active {
@@ -362,41 +370,51 @@
       border-color: rgba(255, 214, 153, 0.65);
     }
 
-    /* テスト用：時間帯切り替えバー（左下） */
-    .test-time-bar {
+    /* テスト用コントロール群（左下：時間帯 ＋ 各モーション確認ボタン） */
+    .test-dock {
       position: absolute;
-      left: 16px;
-      bottom: calc(14px + env(safe-area-inset-bottom));
+      left: 14px;
+      bottom: calc(12px + env(safe-area-inset-bottom));
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
+      z-index: 12;
+      max-width: calc(100vw - 28px);
+    }
+
+    .test-bar {
       display: flex;
       align-items: center;
-      gap: 5px;
+      flex-wrap: wrap;
+      gap: 4px;
       background: var(--glass-bg);
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
       border: 1.5px solid var(--glass-border);
-      border-radius: 999px;
-      padding: 5px 8px;
-      z-index: 12;
+      border-radius: 18px;
+      padding: 4px 7px;
       box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
     }
 
-    .test-time-btn {
+    .test-btn {
       background: transparent;
       border: 1px solid transparent;
-      color: rgba(255, 250, 242, 0.78);
+      color: rgba(255, 250, 242, 0.82);
       border-radius: 999px;
-      padding: 5px 10px;
-      font-size: 11px;
+      padding: 4px 8px;
+      font-size: 10.5px;
       font-weight: 700;
       cursor: pointer;
-      transition: all 0.15s ease;
+      transition: all 0.14s ease;
+      white-space: nowrap;
     }
 
-    .test-time-btn:active {
-      transform: scale(0.94);
+    .test-btn:active {
+      transform: scale(0.93);
     }
 
-    .test-time-btn.active {
+    .test-btn.active {
       background: rgba(246, 185, 99, 0.38);
       border-color: rgba(255, 214, 153, 0.75);
       color: #fffaf2;
@@ -405,7 +423,7 @@
     /* しっぽ付きの可愛い吹き出しデザイン */
     .reaction-bubble {
       position: absolute;
-      top: calc(28% + env(safe-area-inset-top));
+      top: calc(30% + env(safe-area-inset-top));
       left: 60%;
       transform: translateX(-50%) scale(0.88);
       background: var(--bubble-bg);
@@ -510,14 +528,30 @@
       </div>
     </div>
 
-    <!-- テスト用時間帯切り替えボタン -->
-    <div class="test-time-bar" id="testTimeBar">
-      <button class="test-time-btn active" data-slot="auto">🕒 自動</button>
-      <button class="test-time-btn" data-slot="morning">🌅 朝</button>
-      <button class="test-time-btn" data-slot="day">☀️ 昼</button>
-      <button class="test-time-btn" data-slot="sunset">🌇 夕方</button>
-      <button class="test-time-btn" data-slot="night">🌙 夜</button>
-      <button class="test-time-btn" data-slot="midnight">🌌 深夜</button>
+    <!-- テスト用ドック（時間帯 ＋ 各モーション個別確認ボタン） -->
+    <div class="test-dock" id="testDock">
+      <div class="test-bar" id="testTimeBar">
+        <button class="test-btn active" data-slot="auto">🕒 自動</button>
+        <button class="test-btn" data-slot="morning">🌅 朝</button>
+        <button class="test-btn" data-slot="day">☀️ 昼</button>
+        <button class="test-btn" data-slot="sunset">🌇 夕方</button>
+        <button class="test-btn" data-slot="night">🌙 夜</button>
+        <button class="test-btn" data-slot="midnight">🌌 深夜</button>
+      </div>
+      <div class="test-bar" id="testMotionBar">
+        <button class="test-btn" data-motion="sit">おすわり</button>
+        <button class="test-btn" data-motion="down">伏せ</button>
+        <button class="test-btn" data-motion="bark">吠える</button>
+        <button class="test-btn" data-motion="sweet">甘え</button>
+        <button class="test-btn" data-motion="treat">おやつ</button>
+        <button class="test-btn" data-motion="spin">回転</button>
+        <button class="test-btn" data-motion="trot">8の字</button>
+        <button class="test-btn" data-motion="stretch">背伸び(あくび)</button>
+        <button class="test-btn" data-motion="trick">芸(お腹)</button>
+        <button class="test-btn" data-motion="lick">ペロペロ</button>
+        <button class="test-btn" data-motion="pet">なで</button>
+        <button class="test-btn" data-motion="sleep">睡眠</button>
+      </div>
     </div>
 
     <div class="reaction-bubble" id="bubble">ワンワン！</div>
@@ -621,12 +655,13 @@
     const bgmToggleBtn = document.getElementById("bgmToggleBtn");
     const wakeBtn = document.getElementById("wakeBtn");
     const testTimeBar = document.getElementById("testTimeBar");
+    const testMotionBar = document.getElementById("testMotionBar");
 
     const video = document.getElementById("sourceVideo");
     const canvas = document.getElementById("marronCanvas");
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
-    let forcedSlot = "auto"; // "auto" または "morning" | "day" | "sunset" | "night" | "midnight"
+    let forcedSlot = "auto";
     let currentSlot = "";
     let currentMotion = "sit";
     let lastOneAction = "";
@@ -735,7 +770,6 @@
       setTimeout(() => el.remove(), 950);
     }
 
-    // 上からおやつが降ってきて、着地タイミングでおやつモーションへ切り替える
     function dropTreatAndEat() {
       if (!isUnlocked) return;
       initAudioContext();
@@ -807,16 +841,36 @@
       }
     }
 
-    // テスト用時間帯切り替えボタンのクリック処理
+    // テスト用時間帯切り替えボタン
     testTimeBar.addEventListener("click", (e) => {
-      const btn = e.target.closest(".test-time-btn");
+      const btn = e.target.closest(".test-btn");
       if (!btn) return;
       forcedSlot = btn.dataset.slot;
-      testTimeBar.querySelectorAll(".test-time-btn").forEach((b) => {
+      testTimeBar.querySelectorAll(".test-btn").forEach((b) => {
         b.classList.toggle("active", b === btn);
       });
       syncClockRoomAndBgm(true);
     });
+
+    // テスト用モーション切り替えボタン
+    testMotionBar.addEventListener("click", (e) => {
+      const btn = e.target.closest(".test-btn");
+      if (!btn || !isUnlocked) return;
+      initAudioContext();
+      clearTimeout(randomMotionTimer);
+      const motionKey = btn.dataset.motion;
+      if (motionKey === "treat") {
+        dropTreatAndEat();
+      } else {
+        playMotion(motionKey);
+      }
+    });
+
+    function updateMotionTestHighlight(motionKey) {
+      testMotionBar.querySelectorAll(".test-btn").forEach((b) => {
+        b.classList.toggle("active", b.dataset.motion === motionKey);
+      });
+    }
 
     // モーション切り替え
     function playMotion(motionKey, { customText = null, silentBubble = false, loopOverride = null } = {}) {
@@ -824,13 +878,17 @@
       if (!motion) return;
 
       currentMotion = motionKey;
+      updateMotionTestHighlight(motionKey);
+
       if (motionKey !== "sit" && motionKey !== "sleep" && motionKey !== "pet") {
         lastOneAction = motionKey;
       }
 
       const isLicking = motionKey === "lick";
+      const isTrot = motionKey === "trot";
       canvas.classList.toggle("is-sleeping", motionKey === "sleep");
       canvas.classList.toggle("is-licking", isLicking);
+      canvas.classList.toggle("is-trot", isTrot);
       floorShadow.style.opacity = isLicking ? "0" : "1";
 
       video.loop = loopOverride !== null ? loopOverride : motion.loop;
@@ -963,7 +1021,7 @@
     canvas.addEventListener("pointerup", endPointerStroke);
     canvas.addEventListener("pointercancel", endPointerStroke);
 
-    // ブルーバック透過処理（通常のクッキリ2D表示）
+    // ブルーバック透過処理
     function renderChromaKey() {
       if (video.readyState >= 2 && video.videoWidth > 0) {
         if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {

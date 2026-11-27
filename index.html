@@ -159,7 +159,6 @@
       object-fit: cover;
       pointer-events: none;
       transition: opacity 0.8s ease;
-      /* 背景をほんの少しだけ落ち着かせてマロンの立体感を際立たせる */
       filter: contrast(0.98) brightness(0.97);
     }
 
@@ -178,13 +177,13 @@
       transition: width 0.25s ease, bottom 0.25s ease;
     }
 
-   /* 9:16縦長動画用（36vh → 60vh にアップ） */
+    /* マロン本体（9:16縦長動画用：45vh） */
     .marron-canvas {
       position: absolute;
       left: 60%;
       bottom: calc(6.5% + env(safe-area-inset-bottom));
       width: auto;
-      height: 60vh;
+      height: 45vh;
       transform: translateX(-50%);
       transform-origin: center bottom;
       pointer-events: auto;
@@ -194,17 +193,17 @@
       filter: drop-shadow(0 10px 12px rgba(28, 16, 8, 0.42)) drop-shadow(0 2px 3px rgba(28, 16, 8, 0.25));
     }
 
-    /* 16:9横長動画用（56vh → 43vh にダウン） */
+    /* 16:9横長動画用（9:16と体格を一致させるため 43vh に設定） */
     .marron-canvas.is-wide {
       height: 43vh;
       bottom: calc(6% + env(safe-area-inset-bottom));
     }
-    
+
     /* ミッドナイト（ベッド）時はカーペット中央に配置 */
     .marron-canvas.is-sleeping {
       left: 62%;
       bottom: calc(4% + env(safe-area-inset-bottom));
-      height: 38vh;
+      height: 42vh;
     }
 
     .marron-canvas:active {
@@ -353,7 +352,7 @@
       border-color: rgba(255, 214, 153, 0.65);
     }
 
-    /* しっぽ付きの可愛い吹き出しデザイン（マロンの頭に被らない高さに調整） */
+    /* しっぽ付きの可愛い吹き出しデザイン */
     .reaction-bubble {
       position: absolute;
       top: calc(36% + env(safe-area-inset-top));
@@ -468,6 +467,7 @@
 
   <script>
     const PASSCODE = "9648";
+    const EYE_PARALLAX_PX = 5; // 裸眼レンチキュラー視差の左右ズレ幅（px）
 
     const ASSETS = {
       slots: {
@@ -496,7 +496,7 @@
       }
     };
 
-    // 「基本 sit で、たまに気まぐれワンアクションが出る」候補リスト（おやつはボタン専用なので自動からは除外）
+    // 「基本 sit で、たまに気まぐれワンアクションが出る」候補リスト
     const RANDOM_ONE_ACTIONS = [
       "bark",
       "sweet",
@@ -566,6 +566,10 @@
     const video = document.getElementById("sourceVideo");
     const canvas = document.getElementById("marronCanvas");
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
+
+    // 裸眼レンチキュラー視差合成用のオフスクリーンCanvas
+    const offCanvas = document.createElement("canvas");
+    const offCtx = offCanvas.getContext("2d", { willReadFrequently: true });
 
     let currentSlot = "";
     let currentMotion = "sit";
@@ -693,7 +697,6 @@
       stage.appendChild(treatEl);
       setTimeout(() => treatEl.remove(), 960);
 
-      // おやつが落ちてくる少し後にモーション開始
       setTimeout(() => {
         playMotion("treat", { customText: "わーい！おやつだ！待て…よしっ！パクッ♪" });
       }, 320);
@@ -887,32 +890,59 @@
     canvas.addEventListener("pointerup", endPointerStroke);
     canvas.addEventListener("pointercancel", endPointerStroke);
 
-    // ブルーバック透過処理 ＋ 9:16と16:9の表示サイズ自動整合
+    // ブルーバック透過処理 ＋ 裸眼レンチキュラー両目視差合成
     function renderChromaKey() {
       if (video.readyState >= 2 && video.videoWidth > 0) {
-        if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
+        const w = video.videoWidth;
+        const h = video.videoHeight;
 
-          // 横長(16:9)か縦長(9:16)かを自動判定してクラス切り替え
-          const isWideVideo = video.videoWidth > video.videoHeight;
+        if (canvas.width !== w || canvas.height !== h) {
+          canvas.width = w;
+          canvas.height = h;
+          offCanvas.width = w;
+          offCanvas.height = h;
+
+          const isWideVideo = w > h;
           canvas.classList.toggle("is-wide", isWideVideo);
-          floorShadow.style.width = isWideVideo ? "240px" : "195px";
+          floorShadow.style.width = isWideVideo ? "230px" : "200px";
         }
 
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const data = frame.data;
+        // 1. オフスクリーンCanvasでブルーバックを透過
+        offCtx.drawImage(video, 0, 0, w, h);
+        const srcFrame = offCtx.getImageData(0, 0, w, h);
+        const src = srcFrame.data;
 
-        for (let i = 0; i < data.length; i += 4) {
-          const r = data[i];
-          const g = data[i + 1];
-          const b = data[i + 2];
+        for (let i = 0; i < src.length; i += 4) {
+          const r = src[i];
+          const g = src[i + 1];
+          const b = src[i + 2];
           if (b > 95 && b - Math.max(r, g) > 35) {
-            data[i + 3] = 0;
+            src[i + 3] = 0;
           }
         }
-        ctx.putImageData(frame, 0, 0);
+
+        // 2. 裸眼レンチキュラー方式（2pxごとの極細縦スリットで左目用・右目用の視差を交互配置）
+        const outFrame = ctx.createImageData(w, h);
+        const out = outFrame.data;
+        const shift = EYE_PARALLAX_PX;
+
+        for (let y = 0; y < h; y++) {
+          const rowOffset = y * w * 4;
+          for (let x = 0; x < w; x++) {
+            const dstIdx = rowOffset + x * 4;
+            const useLeft = ((x >> 1) & 1) === 0;
+            const sx = useLeft
+              ? Math.min(w - 1, Math.max(0, x - shift))
+              : Math.min(w - 1, Math.max(0, x + shift));
+            const sIdx = rowOffset + sx * 4;
+
+            out[dstIdx]     = src[sIdx];
+            out[dstIdx + 1] = src[sIdx + 1];
+            out[dstIdx + 2] = src[sIdx + 2];
+            out[dstIdx + 3] = src[sIdx + 3];
+          }
+        }
+        ctx.putImageData(outFrame, 0, 0);
       }
       requestAnimationFrame(renderChromaKey);
     }

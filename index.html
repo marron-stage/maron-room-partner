@@ -205,9 +205,9 @@
       bottom: calc(3% + env(safe-area-inset-bottom));
     }
 
-    /* 画面ペロペロ（lick）：sitと同じサイズから滑らかに迫り出し、頭の見切れ線を画面上枠外へ逃がして最後また戻る */
+    /* 画面ペロペロ（lick）：ソファ側へ流れすぎないよう左寄りに補正 */
     .marron-canvas.is-licking {
-      left: 60%;
+      left: 44%;
       bottom: calc(6% + env(safe-area-inset-bottom));
       width: auto;
       height: 49vh;
@@ -218,17 +218,17 @@
 
     @keyframes lickApproach {
       0%, 24% {
-        left: 60%;
+        left: 44%;
         bottom: calc(6% + env(safe-area-inset-bottom));
         transform: translateX(-50%) scale(1);
       }
       45%, 74% {
-        left: 50%;
+        left: 38%;
         bottom: 6vh;
         transform: translateX(-50%) scale(2.35);
       }
       92%, 100% {
-        left: 60%;
+        left: 44%;
         bottom: calc(6% + env(safe-area-inset-bottom));
         transform: translateX(-50%) scale(1);
       }

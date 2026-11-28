@@ -152,7 +152,7 @@
       perspective: 1100px;
     }
 
-    /* 背景レイヤー（視差移動で端が見切れないよう少し大きめに配置） */
+    /* 背景レイヤー */
     .room-layer {
       position: absolute;
       inset: -4%;
@@ -177,7 +177,7 @@
       border-radius: 50%;
       pointer-events: none;
       z-index: 3;
-      transition: width 0.25s ease, bottom 0.25s ease, opacity 0.2s ease;
+      transition: left 0.45s ease, width 0.25s ease, bottom 0.25s ease, opacity 0.2s ease;
       will-change: transform;
     }
 
@@ -195,6 +195,7 @@
       cursor: grab;
       z-index: 4;
       filter: drop-shadow(0 10px 12px rgba(28, 16, 8, 0.42)) drop-shadow(0 2px 3px rgba(28, 16, 8, 0.25));
+      transition: left 0.45s ease, bottom 0.35s ease;
       will-change: transform;
     }
 
@@ -210,7 +211,7 @@
       bottom: calc(3% + env(safe-area-inset-bottom));
     }
 
-    /* クッション丸まり（cushion）は少し小さめ（46vh）にしてカーペットに自然に収める */
+    /* クッション丸まり（cushion）は少し小さめ（46vh） */
     .marron-canvas.is-cushion {
       height: 46vh;
       bottom: calc(5.5% + env(safe-area-inset-bottom));
@@ -236,6 +237,91 @@
 
     .marron-canvas:active {
       cursor: grabbing;
+    }
+
+    /* テニスボール（ミニゲーム用） */
+    .tennis-ball-wrap {
+      position: absolute;
+      left: 50%;
+      top: 84%;
+      transform: translate(-50%, -50%);
+      z-index: 9;
+      touch-action: none;
+      cursor: grab;
+      display: none;
+      will-change: left, top, transform;
+    }
+
+    .tennis-ball-wrap.active {
+      display: block;
+    }
+
+    .tennis-ball-wrap:active {
+      cursor: grabbing;
+    }
+
+    .tennis-ball-shadow {
+      position: absolute;
+      left: 50%;
+      bottom: -8px;
+      width: 44px;
+      height: 12px;
+      transform: translateX(-50%);
+      background: radial-gradient(ellipse at center, rgba(25, 14, 6, 0.48) 0%, rgba(25, 14, 6, 0) 75%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .tennis-ball {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 32% 30%, #e4ff6b 0%, #b7e229 55%, #7da612 100%);
+      box-shadow: inset -4px -5px 10px rgba(45, 65, 5, 0.35), 0 6px 12px rgba(0, 0, 0, 0.32);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .tennis-ball::before,
+    .tennis-ball::after {
+      content: "";
+      position: absolute;
+      width: 42px;
+      height: 42px;
+      border: 2.5px solid rgba(255, 255, 255, 0.85);
+      border-radius: 50%;
+      top: 3px;
+    }
+
+    .tennis-ball::before {
+      left: -26px;
+    }
+
+    .tennis-ball::after {
+      right: -26px;
+    }
+
+    .ball-hint {
+      position: absolute;
+      left: 50%;
+      bottom: calc(14% + env(safe-area-inset-bottom));
+      transform: translateX(-50%);
+      background: rgba(28, 20, 14, 0.72);
+      color: #fff6e5;
+      border: 1px solid rgba(255, 224, 182, 0.38);
+      border-radius: 999px;
+      padding: 5px 14px;
+      font-size: 11.5px;
+      font-weight: 700;
+      white-space: nowrap;
+      pointer-events: none;
+      z-index: 8;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+
+    .ball-hint.show {
+      opacity: 1;
     }
 
     /* 上から降ってくるおやつアニメーション */
@@ -341,7 +427,7 @@
       pointer-events: auto;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       flex-wrap: wrap;
       justify-content: flex-end;
     }
@@ -353,15 +439,15 @@
       color: var(--text);
       border: 1.5px solid var(--glass-border);
       border-radius: 999px;
-      padding: 9px 15px;
-      font-size: 12.5px;
+      padding: 9px 14px;
+      font-size: 12px;
       font-weight: 700;
       letter-spacing: 0.03em;
       cursor: pointer;
       box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
       transition: transform 0.14s ease, background 0.2s ease, border-color 0.2s ease;
     }
 
@@ -546,6 +632,13 @@
     <div class="marron-floor-shadow" id="floorShadow"></div>
     <canvas id="marronCanvas" class="marron-canvas"></canvas>
 
+    <!-- テニスボール投げミニゲーム要素 -->
+    <div class="ball-hint" id="ballHint">🎾 ボールをスワイプして投げてね！</div>
+    <div class="tennis-ball-wrap" id="tennisBallWrap">
+      <div class="tennis-ball-shadow" id="tennisBallShadow"></div>
+      <div class="tennis-ball" id="tennisBall"></div>
+    </div>
+
     <div class="top-bar">
       <div class="clock-card">
         <div class="clock-date" id="clockDate">--/-- (---)</div>
@@ -554,7 +647,8 @@
 
       <div class="top-controls">
         <button class="pill-btn treat-btn" id="treatBtn">🦴 おやつ</button>
-        <button class="pill-btn active" id="depthBtn">✨ 奥行き・ジャイロ: ON</button>
+        <button class="pill-btn" id="ballToggleBtn">🎾 ボール</button>
+        <button class="pill-btn active" id="depthBtn">✨ 立体・ジャイロ: ON</button>
         <button class="pill-btn active" id="bgmToggleBtn">🎵 BGM: ON</button>
         <button class="pill-btn" id="wakeBtn">☀️ 画面常時ON</button>
       </div>
@@ -579,6 +673,7 @@
           <option value="cushion">🛏️ クッション丸まり</option>
           <option value="hop">🐇 ぴょんぴょん接近</option>
           <option value="beg">🥺 首かしげおねだり</option>
+          <option value="back">🐕 後ろ姿トコトコ</option>
           <option value="bark">🗣️ 吠える</option>
           <option value="sweet">💕 甘え</option>
           <option value="treat">🦴 おやつ</option>
@@ -657,7 +752,18 @@
           ]
         },
 
-        // 新規追加3本 ＋ 気まぐれワンアクション（1回再生したら自動的に sit に戻る）
+        // 後ろ姿トコトコ（ボール追っかけ＆単発アクション両用）
+        back: {
+          src: "assets/marron_back.mp4",
+          loop: false,
+          lines: [
+            "トコトコ…そっちに行ってみようっと♪",
+            "タッタッタ♪ 後ろ姿もかわいいでしょ？",
+            "お散歩気分でトコトコ〜！"
+          ]
+        },
+
+        // 新規追加3本 ＋ 気まぐれワンアクション
         cushion: {
           src: "assets/marron_cushion.mp4",
           loop: false,
@@ -867,6 +973,7 @@
     const clockTime = document.getElementById("clockTime");
     const bubble = document.getElementById("bubble");
     const treatBtn = document.getElementById("treatBtn");
+    const ballToggleBtn = document.getElementById("ballToggleBtn");
     const depthBtn = document.getElementById("depthBtn");
     const bgmToggleBtn = document.getElementById("bgmToggleBtn");
     const wakeBtn = document.getElementById("wakeBtn");
@@ -888,26 +995,25 @@
     let bubbleTimer = null;
     let randomMotionTimer = null;
     let idleChatTimer = null;
+    let isFetchingBall = false;
 
     // ---------------------------------------------------------
     // ジャイロ視差 ＋ 指ドラッグ視差 ＋ 多層レイヤー ＋ 微細な呼吸揺らぎ
-    // （カメラは一切使用しない）
     // ---------------------------------------------------------
     let depthEnabled = true;
-    let gyroParallaxX = 0; // -1..1
-    let gyroParallaxY = 0; // -1..1
+    let gyroParallaxX = 0;
+    let gyroParallaxY = 0;
     let gyroBaselineBeta = null;
     let gyroBaselineGamma = null;
     let gyroListenerAttached = false;
 
-    let dragParallaxX = 0; // -1..1
-    let dragParallaxY = 0; // -1..1
+    let dragParallaxX = 0;
+    let dragParallaxY = 0;
     let smoothParallaxX = 0;
     let smoothParallaxY = 0;
 
     function handleDeviceOrientation(e) {
       if (!depthEnabled || e.beta === null || e.gamma === null) return;
-      // 横画面での自然な持ち角度を基準点として記録（傾きすぎてもドリフトしないよう緩やかに追従）
       if (gyroBaselineBeta === null || gyroBaselineGamma === null) {
         gyroBaselineBeta = e.beta;
         gyroBaselineGamma = e.gamma;
@@ -919,7 +1025,6 @@
       const dBeta = e.beta - gyroBaselineBeta;
       const dGamma = e.gamma - gyroBaselineGamma;
 
-      // 横画面（ランドスケープ）では beta が左右傾き、gamma が前後傾きに対応する
       const isLandscape = window.innerWidth >= window.innerHeight;
       const rawX = isLandscape ? dBeta : dGamma;
       const rawY = isLandscape ? -dGamma : dBeta;
@@ -946,9 +1051,7 @@
         } else {
           attachGyroListener();
         }
-      } catch (err) {
-        // 許可されなくても指ドラッグ視差＋呼吸揺らぎでそのまま動作
-      }
+      } catch (err) {}
     }
 
     function updateDragParallaxFromPointer(clientX, clientY) {
@@ -974,21 +1077,18 @@
         return;
       }
 
-      // ジャイロの傾きと指ドラッグ視差を合成
       const combinedTargetX = Math.max(-1.2, Math.min(1.2, gyroParallaxX + dragParallaxX));
       const combinedTargetY = Math.max(-1.2, Math.min(1.2, gyroParallaxY + dragParallaxY));
 
       smoothParallaxX += (combinedTargetX - smoothParallaxX) * (isPointerDown ? 0.16 : 0.08);
       smoothParallaxY += (combinedTargetY - smoothParallaxY) * (isPointerDown ? 0.16 : 0.08);
 
-      // 微細な呼吸・空気揺らぎ（机に置いているときも生命感・奥行きを作る）
       const t = performance.now() * 0.0014;
       const breathRate = currentMotion === "sleep" ? 0.65 : 1.0;
       const breathScale = 1 + Math.sin(t * breathRate) * (currentMotion === "sleep" ? 0.012 : 0.008);
       const breathY = Math.cos(t * breathRate * 0.8) * 1.5;
       const idleDriftX = Math.sin(t * 0.45) * 2.2;
 
-      // 多層レイヤー：背景は逆方向へ、マロンと床影は少し手前方向へずらして奥行きを作る
       const bgX = -(smoothParallaxX * 16 + idleDriftX * 0.6);
       const bgY = -(smoothParallaxY * 9);
 
@@ -1008,13 +1108,13 @@
 
     depthBtn.addEventListener("click", async () => {
       depthEnabled = !depthEnabled;
-      depthBtn.textContent = depthEnabled ? "✨ 奥行き・ジャイロ: ON" : "✨ 奥行き・ジャイロ: OFF";
+      depthBtn.textContent = depthEnabled ? "✨ 立体・ジャイロ: ON" : "✨ 立体・ジャイロ: OFF";
       depthBtn.classList.toggle("active", depthEnabled);
       if (depthEnabled) {
         gyroBaselineBeta = null;
         gyroBaselineGamma = null;
         await requestGyroPermissionIfNeeded();
-        showBubble("ジャイロ＆奥行き視差をONにしたよ！");
+        showBubble("立体視差＆ジャイロをONにしたよ！");
       } else {
         gyroParallaxX = 0;
         gyroParallaxY = 0;
@@ -1022,7 +1122,7 @@
         dragParallaxY = 0;
         smoothParallaxX = 0;
         smoothParallaxY = 0;
-        showBubble("奥行き・ジャイロをOFFにしたよ");
+        showBubble("立体・ジャイロをOFFにしたよ");
       }
     });
 
@@ -1039,7 +1139,7 @@
     });
 
     motionSelect.addEventListener("change", (e) => {
-      if (!isUnlocked) return;
+      if (!isUnlocked || isFetchingBall) return;
       initAudioContext();
       clearTimeout(randomMotionTimer);
       const motionKey = e.target.value;
@@ -1051,7 +1151,7 @@
     });
 
     // ---------------------------------------------------------
-    // Web Audio API（BGM ＋ 動画音声を同一ミキサーに統合しプツプツ音・途切れを防止）
+    // Web Audio API（BGM ＋ 動画音声 ＋ 効果音を統合）
     // ---------------------------------------------------------
     let audioCtx = null;
     let bgmGainNode = null;
@@ -1070,10 +1170,9 @@
         bgmGainNode.gain.value = bgmEnabled ? 0.45 : 0;
         bgmGainNode.connect(audioCtx.destination);
 
-        // 動画の音声出力もWeb Audioパイプラインに統合（動画切り替え時のOSオーディオ再初期化・BGM途切れを防止）
         try {
           videoGainNode = audioCtx.createGain();
-          videoGainNode.gain.value = 0.9;
+          videoGainNode.gain.value = 1.0;
           videoMediaSource = audioCtx.createMediaElementSource(video);
           videoMediaSource.connect(videoGainNode);
           videoGainNode.connect(audioCtx.destination);
@@ -1104,6 +1203,31 @@
 
         osc.start(now);
         osc.stop(now + 0.08);
+      } catch (e) {}
+    }
+
+    function playBallBounceSound(intensity = 1) {
+      if (!audioCtx || audioCtx.state !== "running") return;
+      try {
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.type = "sine";
+        const startFreq = 190 + intensity * 120;
+        osc.frequency.setValueAtTime(startFreq, now);
+        osc.frequency.exponentialRampToValueAtTime(95, now + 0.09);
+
+        const vol = Math.min(0.32, Math.max(0.05, intensity * 0.28));
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(vol, now + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.11);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.12);
       } catch (e) {}
     }
 
@@ -1155,10 +1279,10 @@
 
     function scheduleIdleChat() {
       clearTimeout(idleChatTimer);
-      if (!isUnlocked || currentSlot === "midnight") return;
+      if (!isUnlocked || currentSlot === "midnight" || isFetchingBall) return;
       const delay = 28000 + Math.floor(Math.random() * 18000);
       idleChatTimer = setTimeout(() => {
-        if (!isUnlocked || isPointerDown || currentSlot === "midnight") return;
+        if (!isUnlocked || isPointerDown || currentSlot === "midnight" || isFetchingBall) return;
         const pool = Math.random() < 0.45 && ASSETS.timeLines[currentSlot]
           ? ASSETS.timeLines[currentSlot]
           : ASSETS.idleLines;
@@ -1179,8 +1303,256 @@
       setTimeout(() => el.remove(), 950);
     }
 
-    function dropTreatAndEat() {
+    // ---------------------------------------------------------
+    // テニスボール投げ＆後ろ姿追っかけミニゲーム
+    // ---------------------------------------------------------
+    const tennisBallWrap = document.getElementById("tennisBallWrap");
+    const tennisBall = document.getElementById("tennisBall");
+    const tennisBallShadow = document.getElementById("tennisBallShadow");
+    const ballHint = document.getElementById("ballHint");
+
+    let ballModeActive = false;
+    let ballState = "ready"; // ready | dragging | flying | fetching
+    let ballX = 0.5; // 0..1 (画面比率)
+    let ballY = 0.84;
+    let ballZ = 0; // 高さ（バウンド用 px）
+    let ballVx = 0;
+    let ballVy = 0;
+    let ballVz = 0;
+    let ballScale = 1;
+    let ballRot = 0;
+    let ballAnimRaf = null;
+    let ballDragStart = null;
+    let ballDragHistory = [];
+
+    function resetBallToHand(showHint = true) {
+      cancelAnimationFrame(ballAnimRaf);
+      ballState = "ready";
+      ballX = 0.44;
+      ballY = 0.84;
+      ballZ = 0;
+      ballScale = 1.0;
+      ballRot = 0;
+      renderBallTransform();
+      if (ballModeActive && showHint) {
+        ballHint.classList.add("show");
+      }
+    }
+
+    function renderBallTransform() {
+      const leftPct = (ballX * 100).toFixed(2);
+      const topPct = (ballY * 100).toFixed(2);
+      tennisBallWrap.style.left = `${leftPct}%`;
+      tennisBallWrap.style.top = `${topPct}%`;
+      tennisBallWrap.style.transform = `translate(-50%, -50%) scale(${ballScale.toFixed(3)})`;
+      tennisBall.style.transform = `translateY(${-ballZ.toFixed(1)}px) rotate(${ballRot.toFixed(1)}deg)`;
+      const shadowScale = Math.max(0.45, 1 - ballZ / 160);
+      tennisBallShadow.style.transform = `translateX(-50%) scale(${shadowScale.toFixed(2)})`;
+      tennisBallShadow.style.opacity = Math.max(0.2, 0.85 - ballZ / 180).toFixed(2);
+    }
+
+    function setMarronHorizontalPos(leftPct, bottomOffset = 0) {
+      canvas.style.left = `${leftPct}%`;
+      floorShadow.style.left = `${leftPct}%`;
+      if (bottomOffset > 0) {
+        canvas.style.bottom = `calc(${1.5 + bottomOffset}% + env(safe-area-inset-bottom))`;
+        floorShadow.style.bottom = `calc(${6.5 + bottomOffset}% + env(safe-area-inset-bottom))`;
+      } else {
+        canvas.style.bottom = "";
+        floorShadow.style.bottom = "";
+      }
+    }
+
+    ballToggleBtn.addEventListener("click", () => {
       if (!isUnlocked) return;
+      initAudioContext();
+
+      if (currentSlot === "midnight") {
+        showBubble("Zzz…（深夜はぐっすり眠っているから、また朝に遊ぼうね）");
+        return;
+      }
+
+      ballModeActive = !ballModeActive;
+      ballToggleBtn.classList.toggle("active", ballModeActive);
+      ballToggleBtn.textContent = ballModeActive ? "🎾 ボール: ON" : "🎾 ボール";
+      tennisBallWrap.classList.toggle("active", ballModeActive);
+
+      if (ballModeActive) {
+        resetBallToHand(true);
+        showBubble("わーい！テニスボールだ！投げて投げて〜♪");
+      } else {
+        cancelAnimationFrame(ballAnimRaf);
+        ballHint.classList.remove("show");
+        isFetchingBall = false;
+        setMarronHorizontalPos(60, 0);
+        if (currentMotion !== "sit") {
+          playMotion("sit", { silentBubble: true });
+        }
+      }
+    });
+
+    tennisBallWrap.addEventListener("pointerdown", (e) => {
+      if (!ballModeActive || ballState !== "ready") return;
+      initAudioContext();
+      ballState = "dragging";
+      ballHint.classList.remove("show");
+      ballDragStart = { x: e.clientX, y: e.clientY, t: performance.now() };
+      ballDragHistory = [{ x: e.clientX, y: e.clientY, t: performance.now() }];
+      tennisBallWrap.setPointerCapture(e.pointerId);
+    });
+
+    tennisBallWrap.addEventListener("pointermove", (e) => {
+      if (ballState !== "dragging") return;
+      const rect = stage.getBoundingClientRect();
+      ballX = Math.max(0.15, Math.min(0.85, (e.clientX - rect.left) / rect.width));
+      ballY = Math.max(0.55, Math.min(0.92, (e.clientY - rect.top) / rect.height));
+      ballDragHistory.push({ x: e.clientX, y: e.clientY, t: performance.now() });
+      if (ballDragHistory.length > 6) ballDragHistory.shift();
+      renderBallTransform();
+    });
+
+    tennisBallWrap.addEventListener("pointerup", (e) => {
+      if (ballState !== "dragging") return;
+      const now = performance.now();
+      const ref = ballDragHistory[0] || ballDragStart;
+      const dt = Math.max(16, now - ref.t);
+      const dx = e.clientX - ref.x;
+      const dy = e.clientY - ref.y;
+
+      // 上方向へのスワイプなら奥へ飛ばす（軽くタップしただけでもポーンと飛ぶように補正）
+      const rect = stage.getBoundingClientRect();
+      let vx = (dx / rect.width) * (1000 / dt) * 0.45;
+      let vy = (dy / rect.height) * (1000 / dt) * 0.45;
+
+      if (vy > -0.25) {
+        // 弱いスワイプでもお部屋のカーペット奥へ自然に飛ぶ最低初速を保証
+        vy = -0.75 - Math.random() * 0.25;
+        vx = (Math.random() - 0.35) * 0.45;
+      }
+
+      vx = Math.max(-0.95, Math.min(0.95, vx));
+      vy = Math.max(-1.45, Math.min(-0.55, vy));
+
+      launchTennisBall(vx, vy);
+    });
+
+    tennisBallWrap.addEventListener("pointercancel", () => {
+      if (ballState === "dragging") {
+        resetBallToHand(true);
+      }
+    });
+
+    function launchTennisBall(vx, vy) {
+      ballState = "flying";
+      ballVx = vx;
+      ballVy = vy;
+      ballVz = 14 + Math.abs(vy) * 10;
+      let bounces = 0;
+      let lastTime = performance.now();
+
+      showBubble("あっ！ボールだー！待て待て〜！");
+
+      function stepBall(now) {
+        if (!ballModeActive || ballState !== "flying") return;
+        const dt = Math.min(0.04, (now - lastTime) / 1000);
+        lastTime = now;
+
+        ballX += ballVx * dt;
+        ballY += ballVy * dt;
+        ballZ += ballVz * 60 * dt;
+        ballVz -= 34 * dt; // 重力
+        ballRot += (ballVx * 420 + 240) * dt;
+
+        // 左右の壁バウンド
+        if (ballX < 0.22) {
+          ballX = 0.22;
+          ballVx = Math.abs(ballVx) * 0.72;
+        } else if (ballX > 0.82) {
+          ballX = 0.82;
+          ballVx = -Math.abs(ballVx) * 0.72;
+        }
+
+        // 奥行き（カーペット範囲：y = 0.54 〜 0.80）に合わせて遠近スケール調整
+        if (ballY < 0.54) {
+          ballY = 0.54;
+          ballVy *= -0.35;
+        }
+        const depthRatio = Math.max(0, Math.min(1, (ballY - 0.50) / 0.36));
+        ballScale = 0.52 + depthRatio * 0.48;
+
+        // 地面（カーペット）バウンド判定
+        if (ballZ <= 0) {
+          ballZ = 0;
+          if (Math.abs(ballVz) > 3.2 && bounces < 3) {
+            bounces++;
+            playBallBounceSound(Math.min(1, Math.abs(ballVz) / 14));
+            ballVz = Math.abs(ballVz) * 0.52;
+            ballVx *= 0.72;
+            ballVy *= 0.65;
+          } else {
+            ballVz = 0;
+            ballVx *= 0.86;
+            ballVy *= 0.86;
+          }
+        }
+
+        renderBallTransform();
+
+        if (ballZ === 0 && Math.hypot(ballVx, ballVy) < 0.05) {
+          // ボール停止 → マロンが後ろ姿で取りに行く
+          startMarronFetchSequence(ballX, ballY);
+          return;
+        }
+
+        ballAnimRaf = requestAnimationFrame(stepBall);
+      }
+
+      ballAnimRaf = requestAnimationFrame(stepBall);
+    }
+
+    function startMarronFetchSequence(targetBallX, targetBallY) {
+      if (!ballModeActive) return;
+      ballState = "fetching";
+      isFetchingBall = true;
+      clearTimeout(randomMotionTimer);
+
+      const targetLeftPct = Math.max(28, Math.min(76, targetBallX * 100));
+      const depthLift = Math.max(0, (0.76 - targetBallY) * 26);
+
+      // 1. 後ろ姿（marron_back.mp4）でボールの場所へトコトコ移動
+      playMotion("back", { customText: "トコトコ…ボール見つけたワン♪", loopOverride: true });
+      setMarronHorizontalPos(targetLeftPct, depthLift);
+
+      // 2. ボール地点に到着して拾う
+      setTimeout(() => {
+        if (!ballModeActive || !isFetchingBall) return;
+        playBallBounceSound(0.6);
+        tennisBallWrap.classList.remove("active"); // 口にくわえた演出で一旦消す
+        showBubble("くわえたよ〜！いま持っていくね♪");
+
+        // 3. ぴょんぴょん（hop）で元のカーペット中央へ戻る
+        setTimeout(() => {
+          if (!ballModeActive || !isFetchingBall) return;
+          playMotion("hop", { customText: "ぴょんぴょん♪ 取ってきたよー！", loopOverride: false });
+          setMarronHorizontalPos(60, 0);
+
+          // 4. 元の位置に戻ったらボールを手前に戻して喜ぶ
+          setTimeout(() => {
+            isFetchingBall = false;
+            if (!ballModeActive) return;
+            tennisBallWrap.classList.add("active");
+            resetBallToHand(true);
+            playMotion("beg", { customText: "はいっ！もう一回投げて〜♪" });
+          }, 1400);
+        }, 550);
+      }, 1500);
+    }
+
+    // ---------------------------------------------------------
+    // おやつ・時計・モーション制御
+    // ---------------------------------------------------------
+    function dropTreatAndEat() {
+      if (!isUnlocked || isFetchingBall) return;
       initAudioContext();
 
       if (currentSlot === "midnight") {
@@ -1241,6 +1613,13 @@
           if (slot === "midnight") {
             clearTimeout(randomMotionTimer);
             clearTimeout(idleChatTimer);
+            if (ballModeActive) {
+              ballModeActive = false;
+              ballToggleBtn.classList.remove("active");
+              ballToggleBtn.textContent = "🎾 ボール";
+              tennisBallWrap.classList.remove("active");
+              ballHint.classList.remove("show");
+            }
             playMotion("sleep", { customText: "すやすや…おやすみなさい…", silentBubble: prevSlot === "" });
           } else {
             scheduleIdleChat();
@@ -1256,14 +1635,14 @@
       }
     }
 
-    // 動画切り替え時のフェードインでプツッというクリックノイズを防ぐ
+    // 動画切り替え時のフェードインでプツッというノイズを防ぐ
     function fadeInVideoAudio() {
       if (!audioCtx || !videoGainNode) return;
       try {
         const now = audioCtx.currentTime;
         videoGainNode.gain.cancelScheduledValues(now);
         videoGainNode.gain.setValueAtTime(0.001, now);
-        videoGainNode.gain.linearRampToValueAtTime(0.9, now + 0.06);
+        videoGainNode.gain.linearRampToValueAtTime(1.0, now + 0.06);
       } catch (e) {}
     }
 
@@ -1277,7 +1656,7 @@
         motionSelect.value = motionKey;
       }
 
-      if (motionKey !== "sit" && motionKey !== "sleep" && motionKey !== "pet") {
+      if (motionKey !== "sit" && motionKey !== "sleep" && motionKey !== "pet" && motionKey !== "back") {
         lastOneAction = motionKey;
       }
 
@@ -1299,9 +1678,9 @@
         showBubble(text);
       }
 
-      if (motionKey === "sit" && currentSlot !== "midnight") {
+      if (motionKey === "sit" && currentSlot !== "midnight" && !isFetchingBall) {
         scheduleNextOneAction(15000, 25000);
-      } else if (motionKey === "down" && currentSlot !== "midnight") {
+      } else if (motionKey === "down" && currentSlot !== "midnight" && !isFetchingBall) {
         clearTimeout(randomMotionTimer);
         const restDelay = 12000 + Math.floor(Math.random() * 6000);
         randomMotionTimer = setTimeout(() => {
@@ -1314,7 +1693,7 @@
 
     // 単発ワンアクション動画が終わったら、必ず基本の sit（深夜なら sleep）に戻る
     video.addEventListener("ended", () => {
-      if (!video.loop) {
+      if (!video.loop && !isFetchingBall) {
         if (currentSlot === "midnight") {
           playMotion("sleep", { silentBubble: true });
         } else {
@@ -1325,11 +1704,11 @@
 
     function scheduleNextOneAction(minMs = 15000, maxMs = 25000) {
       clearTimeout(randomMotionTimer);
-      if (!isUnlocked || currentSlot === "midnight") return;
+      if (!isUnlocked || currentSlot === "midnight" || isFetchingBall) return;
 
       const nextDelay = minMs + Math.floor(Math.random() * (maxMs - minMs));
       randomMotionTimer = setTimeout(() => {
-        if (!isUnlocked || isPointerDown || currentSlot === "midnight") return;
+        if (!isUnlocked || isPointerDown || currentSlot === "midnight" || isFetchingBall) return;
         if (currentMotion !== "sit") return;
 
         const candidates = RANDOM_ONE_ACTIONS.filter((k) => k !== lastOneAction);
@@ -1347,7 +1726,7 @@
     let petTriggeredInStroke = false;
 
     canvas.addEventListener("pointerdown", (e) => {
-      if (!isUnlocked) return;
+      if (!isUnlocked || isFetchingBall) return;
       initAudioContext();
       if (depthEnabled && !gyroListenerAttached) {
         requestGyroPermissionIfNeeded();
@@ -1362,7 +1741,7 @@
     });
 
     canvas.addEventListener("pointermove", (e) => {
-      if (!isPointerDown || !lastPos || !isUnlocked) return;
+      if (!isPointerDown || !lastPos || !isUnlocked || isFetchingBall) return;
       const dx = e.clientX - lastPos.x;
       const dy = e.clientY - lastPos.y;
       const step = Math.hypot(dx, dy);
@@ -1402,7 +1781,7 @@
         } else {
           playMotion("sit", { silentBubble: true });
         }
-      } else if (strokeDistance <= 14 && isUnlocked) {
+      } else if (strokeDistance <= 14 && isUnlocked && !isFetchingBall) {
         spawnPetParticle(e.clientX, e.clientY);
         if (currentSlot === "midnight") {
           showBubble("Zzz…むにゃむにゃ…");

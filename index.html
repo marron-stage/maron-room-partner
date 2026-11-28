@@ -732,9 +732,9 @@
     <div class="api-card">
       <div class="api-card-title">🔑 Gemini APIキー設定</div>
       <div class="api-card-desc">
-        Google AI Studio で作成した <strong>AIza...</strong> から始まるAPIキーを貼り付けてください。このiPadのブラウザ内（localStorage）だけに保存されます。
+        Google AI Studio で作成したAPIキーを貼り付けてください。このiPadのブラウザ内（localStorage）だけに保存されます。
       </div>
-      <input type="password" class="api-input" id="apiKeyInput" placeholder="AIza..." autocomplete="off" />
+      <input type="password" class="api-input" id="apiKeyInput" placeholder="AQ... または AIza..." autocomplete="off" />
       <div class="api-actions">
         <button class="pill-btn" id="apiClearBtn">削除</button>
         <button class="pill-btn" id="apiCancelBtn">閉じる</button>
@@ -1341,7 +1341,7 @@
     }
 
     // ---------------------------------------------------------
-    // Gemini おしゃべりプロトタイプ（モデル自動検出 ＋ 音声認識 ＋ 鳴き声連動）
+    // Gemini おしゃべりプロトタイプ（AQ. / AIza キー両対応 ＋ モデル自動検出）
     // ---------------------------------------------------------
     let cachedGeminiModelName = "";
 
@@ -1386,8 +1386,6 @@
       apiModal.classList.remove("show");
       if (!rawKey) {
         showBubble("APIキーが空だよ");
-      } else if (!rawKey.startsWith("AIza")) {
-        showBubble("キーは AIza で始まるものを入れてね！");
       } else {
         showBubble("APIキーを保存したよ！話しかけてね♪");
       }
@@ -1525,13 +1523,6 @@
         apiKeyInput.value = "";
         apiModal.classList.add("show");
         showBubble("GeminiのAPIキーを設定してね！");
-        return;
-      }
-
-      if (!apiKey.startsWith("AIza")) {
-        apiKeyInput.value = apiKey;
-        apiModal.classList.add("show");
-        showBubble("APIキーは AIza で始まるキーを入れてね！");
         return;
       }
 

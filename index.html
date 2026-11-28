@@ -588,65 +588,6 @@
       flex-shrink: 0;
     }
 
-    .api-modal {
-      position: fixed;
-      inset: 0;
-      background: rgba(15, 11, 8, 0.72);
-      backdrop-filter: blur(6px);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 600;
-      padding: 16px;
-    }
-
-    .api-modal.show {
-      display: flex;
-    }
-
-    .api-card {
-      width: 100%;
-      max-width: 390px;
-      background: #281e17;
-      border: 1.5px solid var(--glass-border);
-      border-radius: 24px;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      box-shadow: 0 14px 36px rgba(0, 0, 0, 0.5);
-    }
-
-    .api-card-title {
-      font-size: 15px;
-      font-weight: 700;
-      color: #ffe8c8;
-    }
-
-    .api-card-desc {
-      font-size: 12px;
-      line-height: 1.5;
-      color: #e2cfb6;
-    }
-
-    .api-input {
-      width: 100%;
-      padding: 10px 12px;
-      border-radius: 12px;
-      border: 1px solid rgba(255, 224, 182, 0.35);
-      background: rgba(255, 250, 240, 0.1);
-      color: #fffaf2;
-      font-size: 13px;
-      outline: none;
-      user-select: text;
-    }
-
-    .api-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-    }
-
     /* しっぽ付きの可愛い吹き出しデザイン */
     .reaction-bubble {
       position: absolute;
@@ -755,7 +696,6 @@
         <button class="pill-btn treat-btn" id="treatBtn">🦴 おやつ</button>
         <button class="pill-btn" id="micBtn">🎤 話す</button>
         <button class="pill-btn active" id="textChatToggleBtn">💬 チャット欄</button>
-        <button class="pill-btn" id="apiKeyBtn">🔑 APIキー</button>
         <button class="pill-btn active" id="depthBtn">✨ 立体・ジャイロ: ON</button>
         <button class="pill-btn active" id="bgmToggleBtn">🎵 BGM: ON</button>
         <button class="pill-btn" id="wakeBtn">☀️ 画面常時ON</button>
@@ -806,7 +746,7 @@
         </div>
       </div>
       <div class="chat-history" id="chatHistory">
-        <div class="chat-msg system">マイクで話すか、文字を入力して送るとここに履歴が残るよ</div>
+        <div class="chat-msg system">マイクで話すか、文字を入力して送ると吹き出しと履歴に出るよ</div>
       </div>
       <div class="chat-input-row">
         <input type="text" class="chat-input" id="chatInput" placeholder="話した文字やメッセージ..." />
@@ -817,28 +757,23 @@
     <div class="reaction-bubble" id="bubble">ワンワン！</div>
   </div>
 
-  <!-- Gemini APIキー設定モーダル（iPadブラウザのlocalStorageに保存） -->
-  <div class="api-modal" id="apiModal">
-    <div class="api-card">
-      <div class="api-card-title">🔑 Gemini APIキー設定</div>
-      <div class="api-card-desc">
-        Google AI Studio で作成したAPIキーを貼り付けてください。このiPadのブラウザ内（localStorage）だけに保存されます。
-      </div>
-      <input type="password" class="api-input" id="apiKeyInput" placeholder="APIキーを入力..." autocomplete="off" />
-      <div class="api-actions">
-        <button class="pill-btn" id="apiClearBtn">削除</button>
-        <button class="pill-btn" id="apiCancelBtn">閉じる</button>
-        <button class="pill-btn active" id="apiSaveBtn">保存</button>
-      </div>
-    </div>
-  </div>
-
   <video id="sourceVideo" src="assets/marron_sit.mp4" autoplay loop playsinline></video>
 
   <script>
     const PASSCODE = "9648";
-    const GEMINI_API_KEY_STORAGE = "marron_gemini_api_key_v1";
-    const GEMINI_MODEL_NAME = "gemini-3.8-flash";
+    const REPLY_JSON_URL = "./marron_replies.json";
+
+    const FALLBACK_REPLIES = [
+      { keywords: ["おはよう", "朝", "起きた"], motion: "bark", reply: "おはよ〜！今日もいい一日になるワン！" },
+      { keywords: ["こんにちは", "昼", "やあ"], motion: "hop", reply: "こんにちはだワン！ぴょんぴょん嬉しいな♪" },
+      { keywords: ["こんばんは", "夜", "お疲れ"], motion: "sweet", reply: "こんばんは〜♪ きょうもそばにいるよ" },
+      { keywords: ["おやつ", "ごはん", "お腹すいた", "クッキー", "お肉"], motion: "beg", reply: "おやつ！？お耳がピーンってなったワン！" },
+      { keywords: ["なでなで", "かわいい", "好き", "だいすき", "よしよし"], motion: "sweet", reply: "えへへ、うれしいワン…もっと撫でてね♪" },
+      { keywords: ["つかれた", "疲れた", "しんどい", "むり", "無理"], motion: "sweet", reply: "クゥン…きょうもよくがんばったね。ゆっくり休もうワン" },
+      { keywords: ["おやすみ", "ねむい", "眠い", "寝る"], motion: "stretch", reply: "ふぁ〜あ…おやすみなさいだワン。いい夢みてね〜" },
+      { keywords: ["お手", "芸", "すごい", "えらい"], motion: "trick", reply: "どやっ！上手にできたでしょ〜？ほめてほしいワン♪" },
+      { keywords: [], motion: "bark", reply: "ワンワン！そっちに行くよ〜！きょうもよろしくね♪" }
+    ];
 
     const ASSETS = {
       slots: {
@@ -1115,7 +1050,6 @@
     const treatBtn = document.getElementById("treatBtn");
     const micBtn = document.getElementById("micBtn");
     const textChatToggleBtn = document.getElementById("textChatToggleBtn");
-    const apiKeyBtn = document.getElementById("apiKeyBtn");
     const depthBtn = document.getElementById("depthBtn");
     const bgmToggleBtn = document.getElementById("bgmToggleBtn");
     const wakeBtn = document.getElementById("wakeBtn");
@@ -1131,12 +1065,6 @@
     const chatClearBtn = document.getElementById("chatClearBtn");
     const chatCloseBtn = document.getElementById("chatCloseBtn");
 
-    const apiModal = document.getElementById("apiModal");
-    const apiKeyInput = document.getElementById("apiKeyInput");
-    const apiSaveBtn = document.getElementById("apiSaveBtn");
-    const apiClearBtn = document.getElementById("apiClearBtn");
-    const apiCancelBtn = document.getElementById("apiCancelBtn");
-
     const video = document.getElementById("sourceVideo");
     const canvas = document.getElementById("marronCanvas");
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
@@ -1150,6 +1078,56 @@
     let bubbleTimer = null;
     let randomMotionTimer = null;
     let idleChatTimer = null;
+
+    // 返答辞書（marron_replies.json）
+    let replyDictionary = FALLBACK_REPLIES.slice();
+    let replyDictionaryLoaded = false;
+
+    async function loadReplyDictionary() {
+      try {
+        const res = await fetch(`${REPLY_JSON_URL}?t=${Date.now()}`, { cache: "no-store" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        const list = Array.isArray(json) ? json : (Array.isArray(json?.replies) ? json.replies : []);
+        if (list.length > 0) {
+          replyDictionary = list;
+          replyDictionaryLoaded = true;
+        }
+      } catch (err) {
+        console.warn("marron_replies.json 読み込み失敗（予備辞書を使用）:", err);
+        replyDictionary = FALLBACK_REPLIES.slice();
+      }
+    }
+
+    function pickReplyFromDictionary(userText) {
+      const normalized = String(userText || "").toLowerCase().trim();
+      const matched = [];
+      const defaults = [];
+
+      for (const item of replyDictionary) {
+        if (!item || !item.reply) continue;
+        const kws = Array.isArray(item.keywords) ? item.keywords : [];
+        if (kws.length === 0) {
+          defaults.push(item);
+          continue;
+        }
+        const hit = kws.some((kw) => {
+          const k = String(kw || "").toLowerCase().trim();
+          return k && normalized.includes(k);
+        });
+        if (hit) {
+          matched.push(item);
+        }
+      }
+
+      const pool = matched.length > 0 ? matched : (defaults.length > 0 ? defaults : FALLBACK_REPLIES);
+      const chosen = pool[Math.floor(Math.random() * pool.length)];
+      const allowedMotions = Object.keys(ASSETS.motions).filter((m) => m !== "sleep" && m !== "pet");
+      const motion = allowedMotions.includes(chosen?.motion) ? chosen.motion : "bark";
+      const reply = String(chosen?.reply || "ワンワン！そばにいるよ〜♪").slice(0, 80);
+
+      return { reply, motion };
+    }
 
     // ---------------------------------------------------------
     // ジャイロ視差 ＋ 指ドラッグ視差 ＋ 多層レイヤー ＋ 微細な呼吸揺らぎ
@@ -1442,53 +1420,8 @@
     }
 
     // ---------------------------------------------------------
-    // チャット欄（音声認識→文字入力→送信＋履歴保持）
+    // チャット欄（音声認識→文字入力→送信＋辞書連動＋履歴保持）
     // ---------------------------------------------------------
-    function getSavedApiKey() {
-      try {
-        return (localStorage.getItem(GEMINI_API_KEY_STORAGE) || "").trim();
-      } catch (e) {
-        return "";
-      }
-    }
-
-    function setSavedApiKey(key) {
-      try {
-        if (key && key.trim()) {
-          localStorage.setItem(GEMINI_API_KEY_STORAGE, key.trim());
-        } else {
-          localStorage.removeItem(GEMINI_API_KEY_STORAGE);
-        }
-      } catch (e) {}
-    }
-
-    apiKeyBtn.addEventListener("click", () => {
-      apiKeyInput.value = getSavedApiKey();
-      apiModal.classList.add("show");
-    });
-
-    apiCancelBtn.addEventListener("click", () => {
-      apiModal.classList.remove("show");
-    });
-
-    apiClearBtn.addEventListener("click", () => {
-      setSavedApiKey("");
-      apiKeyInput.value = "";
-      apiModal.classList.remove("show");
-      showBubble("APIキーを削除したよ");
-    });
-
-    apiSaveBtn.addEventListener("click", () => {
-      const rawKey = apiKeyInput.value.trim();
-      setSavedApiKey(rawKey);
-      apiModal.classList.remove("show");
-      if (!rawKey) {
-        showBubble("APIキーが空だよ");
-      } else {
-        showBubble("APIキーを保存したよ！チャットで話しかけてね♪");
-      }
-    });
-
     textChatToggleBtn.addEventListener("click", () => {
       chatPanel.classList.toggle("show");
       textChatToggleBtn.classList.toggle("active", chatPanel.classList.contains("show"));
@@ -1506,11 +1439,11 @@
       chatHistory.innerHTML = '<div class="chat-msg system">履歴をクリアしたよ</div>';
     });
 
-    async function sendTextChat() {
+    function sendTextChat() {
       const text = chatInput.value.trim();
       if (!text) return;
       chatInput.value = "";
-      await talkWithMarronGemini(text);
+      talkWithMarronDictionary(text);
     }
 
     chatSendBtn.addEventListener("click", sendTextChat);
@@ -1542,13 +1475,13 @@
         appendChatMessage("system", "🎤 音声を聞き取り中…");
       };
 
-      recognition.onresult = async (event) => {
+      recognition.onresult = (event) => {
         const transcript = event.results?.[0]?.[0]?.transcript?.trim();
         chatPanel.classList.add("show");
         textChatToggleBtn.classList.add("active");
         if (transcript) {
           chatInput.value = transcript;
-          await sendTextChat();
+          sendTextChat();
         } else {
           appendChatMessage("system", "うまく聞き取れなかったワン…チャット欄から入力してね");
         }
@@ -1574,13 +1507,6 @@
       if (!isUnlocked) return;
       initAudioContext();
 
-      if (!getSavedApiKey()) {
-        apiKeyInput.value = "";
-        apiModal.classList.add("show");
-        showBubble("先にGeminiのAPIキーを入れてね！");
-        return;
-      }
-
       if (!recognition) {
         chatPanel.classList.add("show");
         textChatToggleBtn.classList.add("active");
@@ -1600,16 +1526,12 @@
       }
     });
 
-    async function talkWithMarronGemini(userText) {
+    async function talkWithMarronDictionary(userText) {
       if (!isUnlocked) return;
       initAudioContext();
 
-      const apiKey = getSavedApiKey();
-      if (!apiKey) {
-        apiKeyInput.value = "";
-        apiModal.classList.add("show");
-        showBubble("GeminiのAPIキーを設定してね！");
-        return;
+      if (!replyDictionaryLoaded) {
+        await loadReplyDictionary();
       }
 
       clearTimeout(randomMotionTimer);
@@ -1617,77 +1539,16 @@
       textChatToggleBtn.classList.add("active");
       appendChatMessage("user", userText);
 
-      const slotLabel = (ASSETS.slots[currentSlot] && ASSETS.slots[currentSlot].label) || "昼";
-      const systemInstruction =
-        "二頭身の黒柴の子犬マロン。優しく人懐っこく、全角30文字以内の短い日本語で返事。" +
-        "JSONのみで出力: {\"reply\":\"短い返事\",\"motion\":\"bark|sweet|beg|trick|hop\"}";
+      const { reply, motion } = pickReplyFromDictionary(userText);
 
-      const promptText = `時間帯:${slotLabel} / 話しかけ:${userText}`;
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL_NAME)}:generateContent?key=${encodeURIComponent(apiKey)}`;
-      const payload = JSON.stringify({
-        system_instruction: { parts: [{ text: systemInstruction }] },
-        contents: [{ role: "user", parts: [{ text: promptText }] }],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 80,
-          thinkingConfig: { thinkingBudget: 0 },
-          responseMimeType: "application/json"
-        }
-      });
+      // 吹き出し・チャット履歴・モーションと鳴き声を同時再生
+      appendChatMessage("marron", `🐶 ${reply}`);
+      showBubble(reply, 4200);
+      playMotion(motion, { customText: reply, silentBubble: true });
 
-      try {
-        let response = null;
-        const maxAttempts = 2;
-
-        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-          response = await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: payload
-          });
-
-          if (response.status !== 503 || attempt === maxAttempts) {
-            break;
-          }
-          await new Promise((resolve) => setTimeout(resolve, 900 * attempt));
-        }
-
-        if (!response || !response.ok) {
-          throw new Error(`HTTP ${response ? response.status : "unknown"}`);
-        }
-
-        const data = await response.json();
-        const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-
-        let replyText = "ワンワン！そばにいるよ〜♪";
-        let chosenMotion = "bark";
-
-        try {
-          const parsed = JSON.parse(rawText);
-          if (parsed.reply) replyText = String(parsed.reply).slice(0, 60);
-          const allowed = ["bark", "sweet", "beg", "trick", "hop"];
-          if (parsed.motion && allowed.includes(parsed.motion)) {
-            chosenMotion = parsed.motion;
-          }
-        } catch (parseErr) {
-          if (rawText.trim()) {
-            replyText = rawText.trim().slice(0, 60);
-          }
-        }
-
-        appendChatMessage("marron", `🐶 ${replyText}`);
-        playMotion(chosenMotion, { customText: replyText });
-        clearTimeout(randomMotionTimer);
-        if (currentSlot !== "midnight") {
-          scheduleNextOneAction(25000, 35000);
-        }
-      } catch (err) {
-        console.warn("Gemini通信エラー:", err);
-        appendChatMessage("system", "今ちょっと混み合ってるみたい…もう一度送ってみてね");
-        showBubble("クゥ〜ン…今ちょっと混み合ってるみたい…", 3600);
-        if (currentSlot !== "midnight") {
-          scheduleNextOneAction(25000, 35000);
-        }
+      clearTimeout(randomMotionTimer);
+      if (currentSlot !== "midnight") {
+        scheduleNextOneAction(25000, 35000);
       }
     }
 
@@ -1965,6 +1826,7 @@
 
     function startAppAfterUnlock() {
       initAudioContext();
+      loadReplyDictionary();
       const slot = forcedSlot === "auto" ? getAutoSlot(new Date().getHours()) : forcedSlot;
       const asset = ASSETS.slots[slot] || ASSETS.slots.day;
       currentSlot = slot;
@@ -2025,6 +1887,7 @@
       }
     });
 
+    loadReplyDictionary();
     syncClockRoomAndBgm();
     setInterval(() => syncClockRoomAndBgm(false), 10000);
     video.muted = true;

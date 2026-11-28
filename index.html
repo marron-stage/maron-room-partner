@@ -6,7 +6,7 @@
   <title>マロンのお部屋パートナー</title>
   <style>
     :root {
-      --glass-bg: rgba(32, 24, 18, 0.56);
+      --glass-bg: rgba(32, 24, 18, 0.58);
       --glass-border: rgba(255, 236, 208, 0.32);
       --text: #fffaf2;
       --accent: #f6b963;
@@ -462,34 +462,112 @@
       color: #fffaf2;
     }
 
-    /* おしゃべりテキスト補助＆APIキー設定パネル */
-    .chat-panel {
+    /* チャット欄（履歴表示 ＋ 音声認識/文字入力＋送信） */
+    .chat-box {
       position: absolute;
-      right: 18px;
-      bottom: calc(14px + env(safe-area-inset-bottom));
-      display: none;
-      align-items: center;
-      gap: 6px;
+      left: 16px;
+      bottom: calc(64px + env(safe-area-inset-bottom));
+      width: 340px;
+      max-width: calc(100vw - 32px);
       background: var(--glass-bg);
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
       border: 1.5px solid var(--glass-border);
-      border-radius: 999px;
-      padding: 5px 8px 5px 14px;
-      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
-      z-index: 15;
+      border-radius: 20px;
+      padding: 10px 12px;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 16;
     }
 
-    .chat-panel.show {
+    .chat-box.show {
       display: flex;
     }
 
-    .chat-input {
-      background: transparent;
-      border: none;
+    .chat-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #ffe8c8;
+      padding-bottom: 4px;
+      border-bottom: 1px solid rgba(255, 224, 182, 0.2);
+    }
+
+    .chat-header-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .chat-mini-btn {
+      background: rgba(255, 248, 238, 0.14);
+      border: 1px solid rgba(255, 224, 182, 0.32);
       color: #fffaf2;
-      font-size: 12.5px;
-      width: 190px;
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 10.5px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .chat-history {
+      max-height: 155px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding-right: 2px;
+      user-select: text;
+    }
+
+    .chat-msg {
+      padding: 6px 10px;
+      border-radius: 14px;
+      font-size: 12px;
+      line-height: 1.45;
+      max-width: 88%;
+      word-break: break-word;
+    }
+
+    .chat-msg.user {
+      align-self: flex-end;
+      background: rgba(246, 185, 99, 0.32);
+      border: 1px solid rgba(255, 214, 153, 0.5);
+      color: #fffaf2;
+    }
+
+    .chat-msg.marron {
+      align-self: flex-start;
+      background: rgba(255, 250, 240, 0.94);
+      color: #4a3525;
+      font-weight: 700;
+    }
+
+    .chat-msg.system {
+      align-self: center;
+      background: rgba(255, 248, 238, 0.1);
+      color: #e2cfb6;
+      font-size: 11px;
+    }
+
+    .chat-input-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .chat-input {
+      flex: 1;
+      min-width: 0;
+      background: rgba(255, 250, 240, 0.12);
+      border: 1px solid rgba(255, 224, 182, 0.35);
+      border-radius: 999px;
+      padding: 6px 12px;
+      color: #fffaf2;
+      font-size: 12px;
       outline: none;
       user-select: text;
     }
@@ -498,15 +576,16 @@
       color: rgba(255, 240, 218, 0.65);
     }
 
-    .chat-send-btn, .chat-close-btn {
-      background: rgba(246, 185, 99, 0.35);
-      border: 1px solid rgba(255, 224, 182, 0.45);
+    .chat-send-btn {
+      background: rgba(246, 185, 99, 0.42);
+      border: 1px solid rgba(255, 224, 182, 0.55);
       color: #fffaf2;
       border-radius: 999px;
-      padding: 5px 11px;
+      padding: 6px 12px;
       font-size: 11.5px;
       font-weight: 700;
       cursor: pointer;
+      flex-shrink: 0;
     }
 
     .api-modal {
@@ -675,7 +754,7 @@
       <div class="top-controls">
         <button class="pill-btn treat-btn" id="treatBtn">🦴 おやつ</button>
         <button class="pill-btn" id="micBtn">🎤 話す</button>
-        <button class="pill-btn" id="textChatToggleBtn">💬 入力</button>
+        <button class="pill-btn active" id="textChatToggleBtn">💬 チャット欄</button>
         <button class="pill-btn" id="apiKeyBtn">🔑 APIキー</button>
         <button class="pill-btn active" id="depthBtn">✨ 立体・ジャイロ: ON</button>
         <button class="pill-btn active" id="bgmToggleBtn">🎵 BGM: ON</button>
@@ -717,11 +796,22 @@
       </div>
     </div>
 
-    <!-- 文字入力補助パネル -->
-    <div class="chat-panel" id="chatPanel">
-      <input type="text" class="chat-input" id="chatInput" placeholder="マロンに話しかける..." />
-      <button class="chat-send-btn" id="chatSendBtn">送信</button>
-      <button class="chat-close-btn" id="chatCloseBtn">×</button>
+    <!-- チャット欄（音声認識文字の入力＋送信＋履歴表示） -->
+    <div class="chat-box show" id="chatPanel">
+      <div class="chat-header">
+        <span>💬 マロンとのやり取り</span>
+        <div class="chat-header-actions">
+          <button class="chat-mini-btn" id="chatClearBtn">履歴消去</button>
+          <button class="chat-mini-btn" id="chatCloseBtn">×</button>
+        </div>
+      </div>
+      <div class="chat-history" id="chatHistory">
+        <div class="chat-msg system">マイクで話すか、文字を入力して送るとここに履歴が残るよ</div>
+      </div>
+      <div class="chat-input-row">
+        <input type="text" class="chat-input" id="chatInput" placeholder="話した文字やメッセージ..." />
+        <button class="chat-send-btn" id="chatSendBtn">送信</button>
+      </div>
     </div>
 
     <div class="reaction-bubble" id="bubble">ワンワン！</div>
@@ -1035,8 +1125,10 @@
     const motionSelect = document.getElementById("motionSelect");
 
     const chatPanel = document.getElementById("chatPanel");
+    const chatHistory = document.getElementById("chatHistory");
     const chatInput = document.getElementById("chatInput");
     const chatSendBtn = document.getElementById("chatSendBtn");
+    const chatClearBtn = document.getElementById("chatClearBtn");
     const chatCloseBtn = document.getElementById("chatCloseBtn");
 
     const apiModal = document.getElementById("apiModal");
@@ -1314,6 +1406,15 @@
       bubbleTimer = setTimeout(() => bubble.classList.remove("show"), duration);
     }
 
+    function appendChatMessage(role, text) {
+      if (!text || !chatHistory) return;
+      const el = document.createElement("div");
+      el.className = `chat-msg ${role}`;
+      el.textContent = text;
+      chatHistory.appendChild(el);
+      chatHistory.scrollTop = chatHistory.scrollHeight;
+    }
+
     function scheduleIdleChat() {
       clearTimeout(idleChatTimer);
       if (!isUnlocked || currentSlot === "midnight") return;
@@ -1341,7 +1442,7 @@
     }
 
     // ---------------------------------------------------------
-    // Gemini おしゃべりプロトタイプ（gemini-3.8-flash 高速化調整版）
+    // チャット欄（音声認識→文字入力→送信＋履歴保持）
     // ---------------------------------------------------------
     function getSavedApiKey() {
       try {
@@ -1384,12 +1485,13 @@
       if (!rawKey) {
         showBubble("APIキーが空だよ");
       } else {
-        showBubble("APIキーを保存したよ！話しかけてね♪");
+        showBubble("APIキーを保存したよ！チャットで話しかけてね♪");
       }
     });
 
     textChatToggleBtn.addEventListener("click", () => {
       chatPanel.classList.toggle("show");
+      textChatToggleBtn.classList.toggle("active", chatPanel.classList.contains("show"));
       if (chatPanel.classList.contains("show")) {
         chatInput.focus();
       }
@@ -1397,6 +1499,11 @@
 
     chatCloseBtn.addEventListener("click", () => {
       chatPanel.classList.remove("show");
+      textChatToggleBtn.classList.remove("active");
+    });
+
+    chatClearBtn.addEventListener("click", () => {
+      chatHistory.innerHTML = '<div class="chat-msg system">履歴をクリアしたよ</div>';
     });
 
     async function sendTextChat() {
@@ -1414,7 +1521,7 @@
       }
     });
 
-    // ブラウザ音声認識（iPadOS Safari / Chrome）
+    // ブラウザ音声認識（認識した文字をチャット欄に入れて送信）
     const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
     let recognition = null;
     let isRecognizing = false;
@@ -1427,23 +1534,31 @@
 
       recognition.onstart = () => {
         isRecognizing = true;
+        clearTimeout(randomMotionTimer);
         micBtn.classList.add("mic-listening");
         micBtn.textContent = "🎙️ 聞き中...";
-        playMotion("beg", { customText: "ん？なあに？（お耳を傾けているよ…）" });
+        chatPanel.classList.add("show");
+        textChatToggleBtn.classList.add("active");
+        appendChatMessage("system", "🎤 音声を聞き取り中…");
       };
 
       recognition.onresult = async (event) => {
         const transcript = event.results?.[0]?.[0]?.transcript?.trim();
+        chatPanel.classList.add("show");
+        textChatToggleBtn.classList.add("active");
         if (transcript) {
-          await talkWithMarronGemini(transcript);
+          chatInput.value = transcript;
+          await sendTextChat();
         } else {
-          showBubble("ん？うまく聞き取れなかったワン…");
+          appendChatMessage("system", "うまく聞き取れなかったワン…チャット欄から入力してね");
         }
       };
 
       recognition.onerror = (event) => {
+        chatPanel.classList.add("show");
+        textChatToggleBtn.classList.add("active");
         if (event.error !== "no-speech") {
-          showBubble("マイクが使えなかったみたい…💬入力も使えるよ！");
+          appendChatMessage("system", "マイクが使えなかったみたい…チャット欄から文字で送ってね");
         }
       };
 
@@ -1468,8 +1583,9 @@
 
       if (!recognition) {
         chatPanel.classList.add("show");
+        textChatToggleBtn.classList.add("active");
         chatInput.focus();
-        showBubble("このブラウザは音声入力に非対応だから文字で話そう！");
+        appendChatMessage("system", "このブラウザは音声認識に非対応だから文字入力を使ってね");
         return;
       }
 
@@ -1479,7 +1595,7 @@
         try {
           recognition.start();
         } catch (err) {
-          showBubble("もう一回マイクボタンを押してみてね");
+          appendChatMessage("system", "もう一度マイクボタンを押してみてね");
         }
       }
     });
@@ -1497,7 +1613,9 @@
       }
 
       clearTimeout(randomMotionTimer);
-      showBubble("…（お耳ぴこん）", 4000);
+      chatPanel.classList.add("show");
+      textChatToggleBtn.classList.add("active");
+      appendChatMessage("user", userText);
 
       const slotLabel = (ASSETS.slots[currentSlot] && ASSETS.slots[currentSlot].label) || "昼";
       const systemInstruction =
@@ -1505,26 +1623,37 @@
         "JSONのみで出力: {\"reply\":\"短い返事\",\"motion\":\"bark|sweet|beg|trick|hop\"}";
 
       const promptText = `時間帯:${slotLabel} / 話しかけ:${userText}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL_NAME)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+      const payload = JSON.stringify({
+        system_instruction: { parts: [{ text: systemInstruction }] },
+        contents: [{ role: "user", parts: [{ text: promptText }] }],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 80,
+          thinkingConfig: { thinkingBudget: 0 },
+          responseMimeType: "application/json"
+        }
+      });
 
       try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL_NAME)}:generateContent?key=${encodeURIComponent(apiKey)}`;
-        const response = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            system_instruction: { parts: [{ text: systemInstruction }] },
-            contents: [{ role: "user", parts: [{ text: promptText }] }],
-            generationConfig: {
-              temperature: 0.7,
-              maxOutputTokens: 80,
-              thinkingConfig: { thinkingBudget: 0 },
-              responseMimeType: "application/json"
-            }
-          })
-        });
+        let response = null;
+        const maxAttempts = 2;
 
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+          response = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: payload
+          });
+
+          if (response.status !== 503 || attempt === maxAttempts) {
+            break;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 900 * attempt));
+        }
+
+        if (!response || !response.ok) {
+          throw new Error(`HTTP ${response ? response.status : "unknown"}`);
         }
 
         const data = await response.json();
@@ -1546,11 +1675,19 @@
           }
         }
 
-        // 鳴き声・動きのあるモーション動画と吹き出しを同時再生
+        appendChatMessage("marron", `🐶 ${replyText}`);
         playMotion(chosenMotion, { customText: replyText });
+        clearTimeout(randomMotionTimer);
+        if (currentSlot !== "midnight") {
+          scheduleNextOneAction(25000, 35000);
+        }
       } catch (err) {
         console.warn("Gemini通信エラー:", err);
-        playMotion("sweet", { customText: "クゥ〜ン…うまくお返事できなかったワン…" });
+        appendChatMessage("system", "今ちょっと混み合ってるみたい…もう一度送ってみてね");
+        showBubble("クゥ〜ン…今ちょっと混み合ってるみたい…", 3600);
+        if (currentSlot !== "midnight") {
+          scheduleNextOneAction(25000, 35000);
+        }
       }
     }
 

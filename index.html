@@ -527,7 +527,7 @@
 
     .api-card {
       width: 100%;
-      max-width: 380px;
+      max-width: 390px;
       background: #281e17;
       border: 1.5px solid var(--glass-border);
       border-radius: 24px;
@@ -683,7 +683,7 @@
       </div>
     </div>
 
-    <!-- コンパクトな選択式コントロールバー（左下：トグル＋セレクト式） -->
+    <!-- シンプルな選択式コントロールバー（トグル開閉 ＋ プルダウン選択） -->
     <div class="compact-dock">
       <button class="dock-toggle-btn" id="dockToggleBtn">🎛️ 操作</button>
       <div class="dock-selectors" id="dockSelectors">
@@ -732,7 +732,7 @@
     <div class="api-card">
       <div class="api-card-title">🔑 Gemini APIキー設定</div>
       <div class="api-card-desc">
-        このiPadのブラウザ内（localStorage）だけに保存されます。コード内には書き込まれません。
+        Google AI Studio で作成した <strong>AIza...</strong> から始まるAPIキーを貼り付けてください。このiPadのブラウザ内（localStorage）だけに保存されます。
       </div>
       <input type="password" class="api-input" id="apiKeyInput" placeholder="AIza..." autocomplete="off" />
       <div class="api-actions">
@@ -748,7 +748,7 @@
   <script>
     const PASSCODE = "9648";
     const GEMINI_API_KEY_STORAGE = "marron_gemini_api_key_v1";
-    const GEMINI_MODEL = "gemini-2.5-flash";
+    const DEFAULT_GEMINI_MODEL = "gemini-2.0-flash";
 
     const ASSETS = {
       slots: {
@@ -1341,19 +1341,22 @@
     }
 
     // ---------------------------------------------------------
-    // Gemini おしゃべりプロトタイプ（音声認識 ＋ 吹き出し ＋ 鳴き声連動）
+    // Gemini おしゃべりプロトタイプ（モデル自動検出 ＋ 音声認識 ＋ 鳴き声連動）
     // ---------------------------------------------------------
+    let cachedGeminiModelName = "";
+
     function getSavedApiKey() {
       try {
-        return localStorage.getItem(GEMINI_API_KEY_STORAGE) || "";
+        return (localStorage.getItem(GEMINI_API_KEY_STORAGE) || "").trim();
       } catch (e) {
         return "";
       }
     }
 
     function setSavedApiKey(key) {
+      cachedGeminiModelName = "";
       try {
-        if (key) {
+        if (key && key.trim()) {
           localStorage.setItem(GEMINI_API_KEY_STORAGE, key.trim());
         } else {
           localStorage.removeItem(GEMINI_API_KEY_STORAGE);
@@ -1378,9 +1381,16 @@
     });
 
     apiSaveBtn.addEventListener("click", () => {
-      setSavedApiKey(apiKeyInput.value);
+      const rawKey = apiKeyInput.value.trim();
+      setSavedApiKey(rawKey);
       apiModal.classList.remove("show");
-      showBubble(getSavedApiKey() ? "APIキーを保存したよ！話しかけてね♪" : "APIキーが空だよ");
+      if (!rawKey) {
+        showBubble("APIキーが空だよ");
+      } else if (!rawKey.startsWith("AIza")) {
+        showBubble("キーは AIza で始まるものを入れてね！");
+      } else {
+        showBubble("APIキーを保存したよ！話しかけてね♪");
+      }
     });
 
     textChatToggleBtn.addEventListener("click", () => {
@@ -1479,6 +1489,33 @@
       }
     });
 
+    // 利用可能なGeminiモデルを自動検出して404を防ぐ
+    async function resolveAvailableGeminiModel(apiKey) {
+      if (cachedGeminiModelName) return cachedGeminiModelName;
+      try {
+        const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`;
+        const res = await fetch(listUrl);
+        if (!res.ok) return DEFAULT_GEMINI_MODEL;
+        const data = await res.json();
+        const models = Array.isArray(data.models) ? data.models : [];
+        const supported = models
+          .filter((m) => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes("generateContent"))
+          .map((m) => String(m.name || "").replace(/^models\//, ""));
+
+        const preferred =
+          supported.find((n) => n.includes("flash") && n.includes("2.5")) ||
+          supported.find((n) => n.includes("flash") && n.includes("2.0")) ||
+          supported.find((n) => n.includes("flash")) ||
+          supported[0] ||
+          DEFAULT_GEMINI_MODEL;
+
+        cachedGeminiModelName = preferred;
+        return preferred;
+      } catch (e) {
+        return DEFAULT_GEMINI_MODEL;
+      }
+    }
+
     async function talkWithMarronGemini(userText) {
       if (!isUnlocked) return;
       initAudioContext();
@@ -1488,6 +1525,13 @@
         apiKeyInput.value = "";
         apiModal.classList.add("show");
         showBubble("GeminiのAPIキーを設定してね！");
+        return;
+      }
+
+      if (!apiKey.startsWith("AIza")) {
+        apiKeyInput.value = apiKey;
+        apiModal.classList.add("show");
+        showBubble("APIキーは AIza で始まるキーを入れてね！");
         return;
       }
 
@@ -1505,7 +1549,8 @@
       const promptText = `現在の時間帯は「${slotLabel}」です。飼い主さんが「${userText}」と話しかけました。`;
 
       try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`;
+        const modelName = await resolveAvailableGeminiModel(apiKey);
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}:generateContent?key=${encodeURIComponent(apiKey)}`;
         const response = await fetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -1521,6 +1566,7 @@
         });
 
         if (!response.ok) {
+          cachedGeminiModelName = "";
           throw new Error(`HTTP ${response.status}`);
         }
 

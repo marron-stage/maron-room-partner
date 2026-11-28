@@ -143,23 +143,26 @@
       color: #ffab91;
     }
 
-    /* メインステージ（横画面16:9前提） */
+    /* メインステージ（3D視差空間コンテナ） */
     .full-stage {
       position: relative;
       width: 100%;
       height: 100dvh;
       overflow: hidden;
+      perspective: 1100px;
     }
 
+    /* 背景レイヤー（視差移動で端が見切れないよう少し大きめに配置） */
     .room-layer {
       position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
+      inset: -4%;
+      width: 108%;
+      height: 108%;
       object-fit: cover;
       pointer-events: none;
       transition: opacity 0.8s ease;
       filter: contrast(0.98) brightness(0.97);
+      will-change: transform;
     }
 
     /* 立体接地影（カーペットの上に落ちる自然な影） */
@@ -175,6 +178,7 @@
       pointer-events: none;
       z-index: 3;
       transition: width 0.25s ease, bottom 0.25s ease, opacity 0.2s ease;
+      will-change: transform;
     }
 
     /* マロン本体（9:16縦長動画用：65vh） */
@@ -191,11 +195,12 @@
       cursor: grab;
       z-index: 4;
       filter: drop-shadow(0 10px 12px rgba(28, 16, 8, 0.42)) drop-shadow(0 2px 3px rgba(28, 16, 8, 0.25));
+      will-change: transform;
     }
 
     /* 16:9横長動画用 */
     .marron-canvas.is-wide {
-      height: 45vh;
+      height: 49vh;
       bottom: calc(6% + env(safe-area-inset-bottom));
     }
 
@@ -205,7 +210,13 @@
       bottom: calc(3% + env(safe-area-inset-bottom));
     }
 
-    /* 画面ペロペロ（lick）：ズームアップや移動をやめて他のモーションと同じ普通の表示に統一 */
+    /* クッション丸まり（cushion）はカーペットに自然になじむ高さに調整 */
+    .marron-canvas.is-cushion {
+      height: 54vh;
+      bottom: calc(4.5% + env(safe-area-inset-bottom));
+    }
+
+    /* 画面ペロペロ（lick） */
     .marron-canvas.is-licking {
       left: 60%;
       bottom: calc(6% + env(safe-area-inset-bottom));
@@ -281,7 +292,7 @@
       }
     }
 
-    /* おしゃれな上部HUD（時計・おやつ・BGM・画面常時ON） */
+    /* おしゃれな上部HUD */
     .top-bar {
       position: absolute;
       top: calc(14px + env(safe-area-inset-top));
@@ -294,7 +305,6 @@
       z-index: 10;
     }
 
-    /* おしゃれな時計カード */
     .clock-card {
       pointer-events: auto;
       background: var(--glass-bg);
@@ -327,12 +337,13 @@
       text-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
     }
 
-    /* 右上の操作ピル群 */
     .top-controls {
       pointer-events: auto;
       display: flex;
       align-items: center;
       gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
     }
 
     button.pill-btn {
@@ -342,7 +353,7 @@
       color: var(--text);
       border: 1.5px solid var(--glass-border);
       border-radius: 999px;
-      padding: 9px 16px;
+      padding: 9px 15px;
       font-size: 12.5px;
       font-weight: 700;
       letter-spacing: 0.03em;
@@ -369,53 +380,74 @@
       border-color: rgba(255, 214, 153, 0.65);
     }
 
-    /* テスト用コントロール群（左下：時間帯 ＋ 各モーション確認ボタン） */
-    .test-dock {
+    /* コンパクトな選択式コントロールバー（左下：トグル＋セレクト式） */
+    .compact-dock {
       position: absolute;
-      left: 14px;
-      bottom: calc(12px + env(safe-area-inset-bottom));
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 6px;
-      z-index: 12;
-      max-width: calc(100vw - 28px);
-    }
-
-    .test-bar {
+      left: 16px;
+      bottom: calc(14px + env(safe-area-inset-bottom));
       display: flex;
       align-items: center;
-      flex-wrap: wrap;
-      gap: 4px;
+      gap: 8px;
+      z-index: 12;
+    }
+
+    .dock-toggle-btn {
+      background: var(--glass-bg);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      color: var(--text);
+      border: 1.5px solid var(--glass-border);
+      border-radius: 999px;
+      padding: 8px 13px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+      transition: transform 0.14s ease, background 0.2s ease;
+    }
+
+    .dock-toggle-btn:active {
+      transform: scale(0.94);
+    }
+
+    .dock-selectors {
+      display: flex;
+      align-items: center;
+      gap: 8px;
       background: var(--glass-bg);
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
       border: 1.5px solid var(--glass-border);
-      border-radius: 18px;
-      padding: 4px 7px;
+      border-radius: 999px;
+      padding: 5px 10px;
       box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+      transition: opacity 0.2s ease, transform 0.2s ease;
     }
 
-    .test-btn {
-      background: transparent;
-      border: 1px solid transparent;
-      color: rgba(255, 250, 242, 0.82);
+    .dock-selectors.collapsed {
+      display: none;
+    }
+
+    .glass-select {
+      appearance: none;
+      -webkit-appearance: none;
+      background: rgba(255, 248, 238, 0.12);
+      color: #fffaf2;
+      border: 1px solid rgba(255, 224, 182, 0.35);
       border-radius: 999px;
-      padding: 4px 8px;
-      font-size: 10.5px;
+      padding: 6px 26px 6px 12px;
+      font-size: 12px;
       font-weight: 700;
       cursor: pointer;
-      transition: all 0.14s ease;
-      white-space: nowrap;
+      outline: none;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffe8c8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      background-size: 13px;
     }
 
-    .test-btn:active {
-      transform: scale(0.93);
-    }
-
-    .test-btn.active {
-      background: rgba(246, 185, 99, 0.38);
-      border-color: rgba(255, 214, 153, 0.75);
+    .glass-select option {
+      background: #261c15;
       color: #fffaf2;
     }
 
@@ -467,7 +499,7 @@
       transform: translateX(-50%) scale(1);
     }
 
-    video#sourceVideo {
+    video#sourceVideo, video#headTrackVideo {
       display: none;
     }
   </style>
@@ -522,34 +554,42 @@
 
       <div class="top-controls">
         <button class="pill-btn treat-btn" id="treatBtn">🦴 おやつ</button>
+        <button class="pill-btn" id="parallaxBtn">👁️ 覗き込み3D: OFF</button>
         <button class="pill-btn active" id="bgmToggleBtn">🎵 BGM: ON</button>
         <button class="pill-btn" id="wakeBtn">☀️ 画面常時ON</button>
       </div>
     </div>
 
-    <!-- テスト用ドック（時間帯 ＋ 各モーション個別確認ボタン） -->
-    <div class="test-dock" id="testDock">
-      <div class="test-bar" id="testTimeBar">
-        <button class="test-btn active" data-slot="auto">🕒 自動</button>
-        <button class="test-btn" data-slot="morning">🌅 朝</button>
-        <button class="test-btn" data-slot="day">☀️ 昼</button>
-        <button class="test-btn" data-slot="sunset">🌇 夕方</button>
-        <button class="test-btn" data-slot="night">🌙 夜</button>
-        <button class="test-btn" data-slot="midnight">🌌 深夜</button>
-      </div>
-      <div class="test-bar" id="testMotionBar">
-        <button class="test-btn" data-motion="sit">おすわり</button>
-        <button class="test-btn" data-motion="down">伏せ</button>
-        <button class="test-btn" data-motion="bark">吠える</button>
-        <button class="test-btn" data-motion="sweet">甘え</button>
-        <button class="test-btn" data-motion="treat">おやつ</button>
-        <button class="test-btn" data-motion="spin">回転</button>
-        <button class="test-btn" data-motion="trot">8の字</button>
-        <button class="test-btn" data-motion="stretch">背伸び(あくび)</button>
-        <button class="test-btn" data-motion="trick">芸(お腹)</button>
-        <button class="test-btn" data-motion="lick">ペロペロ</button>
-        <button class="test-btn" data-motion="pet">なで</button>
-        <button class="test-btn" data-motion="sleep">睡眠</button>
+    <!-- シンプルな選択式コントロールバー（トグル開閉 ＋ プルダウン選択） -->
+    <div class="compact-dock">
+      <button class="dock-toggle-btn" id="dockToggleBtn">🎛️ 操作</button>
+      <div class="dock-selectors" id="dockSelectors">
+        <select class="glass-select" id="timeSelect" aria-label="時間帯選択">
+          <option value="auto">🕒 時間帯: 自動</option>
+          <option value="morning">🌅 朝</option>
+          <option value="day">☀️ 昼</option>
+          <option value="sunset">🌇 夕方</option>
+          <option value="night">🌙 夜</option>
+          <option value="midnight">🌌 深夜</option>
+        </select>
+
+        <select class="glass-select" id="motionSelect" aria-label="行動選択">
+          <option value="sit">🐾 行動: おすわり</option>
+          <option value="down">🛋️ 伏せ</option>
+          <option value="cushion">🛏️ クッション丸まり</option>
+          <option value="hop">🐇 ぴょんぴょん接近</option>
+          <option value="beg">🥺 首かしげおねだり</option>
+          <option value="bark">🗣️ 吠える</option>
+          <option value="sweet">💕 甘え</option>
+          <option value="treat">🦴 おやつ</option>
+          <option value="spin">🌀 回転</option>
+          <option value="trot">🚶 8の字散歩</option>
+          <option value="stretch">🥱 背伸び(あくび)</option>
+          <option value="trick">🎪 芸(お腹)</option>
+          <option value="lick">👅 ペロペロ</option>
+          <option value="pet">✋ なでなで</option>
+          <option value="sleep">💤 睡眠</option>
+        </select>
       </div>
     </div>
 
@@ -557,6 +597,7 @@
   </div>
 
   <video id="sourceVideo" src="assets/marron_sit.mp4" autoplay loop playsinline></video>
+  <video id="headTrackVideo" autoplay playsinline muted></video>
 
   <script>
     const PASSCODE = "9648";
@@ -617,7 +658,34 @@
           ]
         },
 
-        // 気まぐれワンアクション（1回再生したら自動的に sit に戻る）
+        // 新規追加3本 ＋ 気まぐれワンアクション（1回再生したら自動的に sit に戻る）
+        cushion: {
+          src: "assets/marron_cushion.mp4",
+          loop: false,
+          lines: [
+            "ふかふかクッション整えて…くるん♪",
+            "もふもふで最高だワン…おやすみ気分〜",
+            "前足でフミフミ…ここが一番落ち着くね"
+          ]
+        },
+        hop: {
+          src: "assets/marron_hop.mp4",
+          loop: false,
+          lines: [
+            "ぴょんぴょん！そっちに行くよ〜♪",
+            "わーい！駆け寄っちゃうワン！",
+            "ぴょこぴょこ♪ ねえねえ、見て見て〜！"
+          ]
+        },
+        beg: {
+          src: "assets/marron_beg.mp4",
+          loop: false,
+          lines: [
+            "ん？なあに？（首をコテン…）",
+            "ちょいちょい♪ ちょっと構ってほしいワン",
+            "おてて上げてアピール！なでてくれる？"
+          ]
+        },
         bark: {
           src: "assets/marron_bark.mp4",
           loop: false,
@@ -689,7 +757,7 @@
           ]
         },
         lick: {
-          src: "assets/marron_lick.mp4",
+          src: "assets/marron_lick_2.mp4",
           loop: false,
           lines: [
             "わーい！ペロペロ〜！（近い近い！）",
@@ -734,6 +802,9 @@
     };
 
     const RANDOM_ONE_ACTIONS = [
+      "cushion",
+      "hop",
+      "beg",
       "bark",
       "sweet",
       "spin",
@@ -796,10 +867,13 @@
     const clockTime = document.getElementById("clockTime");
     const bubble = document.getElementById("bubble");
     const treatBtn = document.getElementById("treatBtn");
+    const parallaxBtn = document.getElementById("parallaxBtn");
     const bgmToggleBtn = document.getElementById("bgmToggleBtn");
     const wakeBtn = document.getElementById("wakeBtn");
-    const testTimeBar = document.getElementById("testTimeBar");
-    const testMotionBar = document.getElementById("testMotionBar");
+    const dockToggleBtn = document.getElementById("dockToggleBtn");
+    const dockSelectors = document.getElementById("dockSelectors");
+    const timeSelect = document.getElementById("timeSelect");
+    const motionSelect = document.getElementById("motionSelect");
 
     const video = document.getElementById("sourceVideo");
     const canvas = document.getElementById("marronCanvas");
@@ -814,6 +888,164 @@
     let bubbleTimer = null;
     let randomMotionTimer = null;
     let idleChatTimer = null;
+
+    // ---------------------------------------------------------
+    // 覗き込み3D視差（インカメラ顔位置トラッキング ＋ フォールバック）
+    // ---------------------------------------------------------
+    let parallaxEnabled = false;
+    let headStream = null;
+    let headTrackRaf = null;
+    const headVideo = document.getElementById("headTrackVideo");
+    const trackCanvas = document.createElement("canvas");
+    trackCanvas.width = 64;
+    trackCanvas.height = 48;
+    const trackCtx = trackCanvas.getContext("2d", { willReadFrequently: true });
+
+    let targetLookX = 0; // -1（左から覗く）〜 +1（右から覗く）
+    let targetLookY = 0; // -1（上から）〜 +1（下から）
+    let smoothLookX = 0;
+    let smoothLookY = 0;
+    let hasCameraTrack = false;
+
+    async function toggleHeadParallax() {
+      parallaxEnabled = !parallaxEnabled;
+      if (parallaxEnabled) {
+        parallaxBtn.textContent = "👁️ 覗き込み3D: ON";
+        parallaxBtn.classList.add("active");
+        try {
+          headStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: "user", width: 160, height: 120 },
+            audio: false
+          });
+          headVideo.srcObject = headStream;
+          await headVideo.play();
+          hasCameraTrack = true;
+          showBubble("顔を左右に動かして覗き込むと立体的に見えるよ！");
+        } catch (err) {
+          hasCameraTrack = false;
+          showBubble("カメラなしでも緩やかな3D視差をONにしたよ！");
+        }
+        startParallaxLoop();
+      } else {
+        parallaxBtn.textContent = "👁️ 覗き込み3D: OFF";
+        parallaxBtn.classList.remove("active");
+        stopHeadParallax();
+        showBubble("覗き込み3DをOFFにしたよ");
+      }
+    }
+
+    function stopHeadParallax() {
+      if (headTrackRaf) {
+        cancelAnimationFrame(headTrackRaf);
+        headTrackRaf = null;
+      }
+      if (headStream) {
+        headStream.getTracks().forEach((t) => t.stop());
+        headStream = null;
+      }
+      hasCameraTrack = false;
+      targetLookX = 0;
+      targetLookY = 0;
+      smoothLookX = 0;
+      smoothLookY = 0;
+      roomImg.style.transform = "";
+      canvas.style.transform = "translateX(-50%)";
+      floorShadow.style.transform = "translateX(-50%)";
+    }
+
+    function detectFaceCentroid() {
+      if (!hasCameraTrack || headVideo.readyState < 2) return;
+      trackCtx.drawImage(headVideo, 0, 0, 64, 48);
+      const pixels = trackCtx.getImageData(0, 0, 64, 48).data;
+
+      let sumX = 0;
+      let sumY = 0;
+      let count = 0;
+
+      // 肌色領域の重心を高速サンプリングして顔の位置を推定
+      for (let y = 4; y < 44; y++) {
+        for (let x = 4; x < 60; x++) {
+          const i = (y * 64 + x) * 4;
+          const r = pixels[i];
+          const g = pixels[i + 1];
+          const b = pixels[i + 2];
+          if (r > 85 && g > 40 && b > 25 && r > g && r > b && (r - g) > 12) {
+            sumX += x;
+            sumY += y;
+            count++;
+          }
+        }
+      }
+
+      if (count > 25) {
+        const cx = sumX / count; // 0..64
+        const cy = sumY / count; // 0..48
+        // インカメラは鏡像なので左右反転して自然な視差方向にする
+        targetLookX = Math.max(-1, Math.min(1, -((cx - 32) / 18)));
+        targetLookY = Math.max(-1, Math.min(1, (cy - 24) / 16));
+      }
+    }
+
+    function startParallaxLoop() {
+      let frameTick = 0;
+      function tick() {
+        if (!parallaxEnabled) return;
+        frameTick++;
+
+        if (hasCameraTrack) {
+          if (frameTick % 2 === 0) detectFaceCentroid();
+        } else {
+          // カメラ未許可時はゆったりした自動の立体揺らぎ
+          const t = performance.now() * 0.0012;
+          targetLookX = Math.sin(t) * 0.45;
+          targetLookY = Math.cos(t * 0.8) * 0.25;
+        }
+
+        // スムージングで酔いにくい滑らかな視差移動
+        smoothLookX += (targetLookX - smoothLookX) * 0.12;
+        smoothLookY += (targetLookY - smoothLookY) * 0.12;
+
+        // 奥の部屋背景は逆方向へ大きく動き、手前のマロンは少し手前側へ動くことで奥行き視差を作る
+        const bgX = -smoothLookX * 26;
+        const bgY = -smoothLookY * 14;
+        const fgX = smoothLookX * 14;
+        const fgY = smoothLookY * 6;
+        const rotY = smoothLookX * 4.5;
+
+        roomImg.style.transform = `translate3d(${bgX.toFixed(1)}px, ${bgY.toFixed(1)}px, 0) scale(1.06)`;
+        canvas.style.transform = `translate3d(calc(-50% + ${fgX.toFixed(1)}px), ${fgY.toFixed(1)}px, 24px) rotateY(${rotY.toFixed(2)}deg)`;
+        floorShadow.style.transform = `translate3d(calc(-50% + ${(fgX * 0.85).toFixed(1)}px), ${(fgY * 0.6).toFixed(1)}px, 0)`;
+
+        headTrackRaf = requestAnimationFrame(tick);
+      }
+      headTrackRaf = requestAnimationFrame(tick);
+    }
+
+    parallaxBtn.addEventListener("click", toggleHeadParallax);
+
+    // ---------------------------------------------------------
+    // 操作ドックのトグル開閉 & プルダウン選択
+    // ---------------------------------------------------------
+    dockToggleBtn.addEventListener("click", () => {
+      dockSelectors.classList.toggle("collapsed");
+    });
+
+    timeSelect.addEventListener("change", (e) => {
+      forcedSlot = e.target.value;
+      syncClockRoomAndBgm(true);
+    });
+
+    motionSelect.addEventListener("change", (e) => {
+      if (!isUnlocked) return;
+      initAudioContext();
+      clearTimeout(randomMotionTimer);
+      const motionKey = e.target.value;
+      if (motionKey === "treat") {
+        dropTreatAndEat();
+      } else {
+        playMotion(motionKey);
+      }
+    });
 
     // Web Audio API
     let audioCtx = null;
@@ -1007,54 +1239,24 @@
       }
     }
 
-    // テスト用時間帯切り替えボタン
-    testTimeBar.addEventListener("click", (e) => {
-      const btn = e.target.closest(".test-btn");
-      if (!btn) return;
-      forcedSlot = btn.dataset.slot;
-      testTimeBar.querySelectorAll(".test-btn").forEach((b) => {
-        b.classList.toggle("active", b === btn);
-      });
-      syncClockRoomAndBgm(true);
-    });
-
-    // テスト用モーション切り替えボタン
-    testMotionBar.addEventListener("click", (e) => {
-      const btn = e.target.closest(".test-btn");
-      if (!btn || !isUnlocked) return;
-      initAudioContext();
-      clearTimeout(randomMotionTimer);
-      const motionKey = btn.dataset.motion;
-      if (motionKey === "treat") {
-        dropTreatAndEat();
-      } else {
-        playMotion(motionKey);
-      }
-    });
-
-    function updateMotionTestHighlight(motionKey) {
-      testMotionBar.querySelectorAll(".test-btn").forEach((b) => {
-        b.classList.toggle("active", b.dataset.motion === motionKey);
-      });
-    }
-
     // モーション切り替え
     function playMotion(motionKey, { customText = null, silentBubble = false, loopOverride = null } = {}) {
       const motion = ASSETS.motions[motionKey];
       if (!motion) return;
 
       currentMotion = motionKey;
-      updateMotionTestHighlight(motionKey);
+      if (motionSelect.value !== motionKey) {
+        motionSelect.value = motionKey;
+      }
 
       if (motionKey !== "sit" && motionKey !== "sleep" && motionKey !== "pet") {
         lastOneAction = motionKey;
       }
 
-      const isLicking = motionKey === "lick";
-      const isTrot = motionKey === "trot";
       canvas.classList.toggle("is-sleeping", motionKey === "sleep");
-      canvas.classList.toggle("is-licking", isLicking);
-      canvas.classList.toggle("is-trot", isTrot);
+      canvas.classList.toggle("is-licking", motionKey === "lick");
+      canvas.classList.toggle("is-trot", motionKey === "trot");
+      canvas.classList.toggle("is-cushion", motionKey === "cushion");
       floorShadow.style.opacity = "1";
 
       video.loop = loopOverride !== null ? loopOverride : motion.loop;
@@ -1173,7 +1375,7 @@
           showBubble("Zzz…むにゃむにゃ…");
         } else {
           clearTimeout(randomMotionTimer);
-          const tapActions = ["bark", "trick", "lick", "spin", "stretch"];
+          const tapActions = ["hop", "beg", "bark", "trick", "lick", "spin", "stretch"];
           const candidates = tapActions.filter((k) => k !== lastOneAction);
           const nextKey = candidates[Math.floor(Math.random() * candidates.length)];
           playMotion(nextKey);

@@ -210,10 +210,10 @@
       bottom: calc(3% + env(safe-area-inset-bottom));
     }
 
-    /* クッション丸まり（cushion）はカーペットに自然になじむ高さに調整 */
+    /* クッション丸まり（cushion）は少し小さめ（46vh）にしてカーペットに自然に収める */
     .marron-canvas.is-cushion {
-      height: 54vh;
-      bottom: calc(4.5% + env(safe-area-inset-bottom));
+      height: 46vh;
+      bottom: calc(5.5% + env(safe-area-inset-bottom));
     }
 
     /* 画面ペロペロ（lick） */
@@ -554,7 +554,7 @@
 
       <div class="top-controls">
         <button class="pill-btn treat-btn" id="treatBtn">🦴 おやつ</button>
-        <button class="pill-btn active" id="depthBtn">✨ 奥行き視差: ON</button>
+        <button class="pill-btn active" id="depthBtn">✨ 奥行き・ジャイロ: ON</button>
         <button class="pill-btn active" id="bgmToggleBtn">🎵 BGM: ON</button>
         <button class="pill-btn" id="wakeBtn">☀️ 画面常時ON</button>
       </div>
@@ -847,6 +847,7 @@
         if (inputCode === PASSCODE) {
           isUnlocked = true;
           lockScreen.classList.add("hidden");
+          requestGyroPermissionIfNeeded();
           startAppAfterUnlock();
         } else {
           lockMsg.textContent = "パスコードが違うみたい…";
@@ -889,14 +890,66 @@
     let idleChatTimer = null;
 
     // ---------------------------------------------------------
-    // 指ドラッグ視差 ＋ 多層レイヤー ＋ 微細な呼吸揺らぎ
-    // （カメラ・ジャイロは使用しない）
+    // ジャイロ視差 ＋ 指ドラッグ視差 ＋ 多層レイヤー ＋ 微細な呼吸揺らぎ
+    // （カメラは一切使用しない）
     // ---------------------------------------------------------
     let depthEnabled = true;
+    let gyroParallaxX = 0; // -1..1
+    let gyroParallaxY = 0; // -1..1
+    let gyroBaselineBeta = null;
+    let gyroBaselineGamma = null;
+    let gyroListenerAttached = false;
+
     let dragParallaxX = 0; // -1..1
     let dragParallaxY = 0; // -1..1
     let smoothParallaxX = 0;
     let smoothParallaxY = 0;
+
+    function handleDeviceOrientation(e) {
+      if (!depthEnabled || e.beta === null || e.gamma === null) return;
+      // 横画面での自然な持ち角度を基準点として記録（傾きすぎてもドリフトしないよう緩やかに追従）
+      if (gyroBaselineBeta === null || gyroBaselineGamma === null) {
+        gyroBaselineBeta = e.beta;
+        gyroBaselineGamma = e.gamma;
+      } else {
+        gyroBaselineBeta += (e.beta - gyroBaselineBeta) * 0.015;
+        gyroBaselineGamma += (e.gamma - gyroBaselineGamma) * 0.015;
+      }
+
+      const dBeta = e.beta - gyroBaselineBeta;
+      const dGamma = e.gamma - gyroBaselineGamma;
+
+      // 横画面（ランドスケープ）では beta が左右傾き、gamma が前後傾きに対応する
+      const isLandscape = window.innerWidth >= window.innerHeight;
+      const rawX = isLandscape ? dBeta : dGamma;
+      const rawY = isLandscape ? -dGamma : dBeta;
+
+      gyroParallaxX = Math.max(-1, Math.min(1, rawX / 16));
+      gyroParallaxY = Math.max(-1, Math.min(1, rawY / 16));
+    }
+
+    function attachGyroListener() {
+      if (gyroListenerAttached) return;
+      window.addEventListener("deviceorientation", handleDeviceOrientation, true);
+      gyroListenerAttached = true;
+    }
+
+    async function requestGyroPermissionIfNeeded() {
+      try {
+        if (typeof DeviceOrientationEvent !== "undefined" && typeof DeviceOrientationEvent.requestPermission === "function") {
+          const res = await DeviceOrientationEvent.requestPermission();
+          if (res === "granted") {
+            gyroBaselineBeta = null;
+            gyroBaselineGamma = null;
+            attachGyroListener();
+          }
+        } else {
+          attachGyroListener();
+        }
+      } catch (err) {
+        // 許可されなくても指ドラッグ視差＋呼吸揺らぎでそのまま動作
+      }
+    }
 
     function updateDragParallaxFromPointer(clientX, clientY) {
       if (!depthEnabled) return;
@@ -921,46 +974,56 @@
         return;
       }
 
-      // 指を離したらゆっくり中央へ戻し、触っている間は指位置へ滑らかに追従
-      smoothParallaxX += (dragParallaxX - smoothParallaxX) * (isPointerDown ? 0.16 : 0.06);
-      smoothParallaxY += (dragParallaxY - smoothParallaxY) * (isPointerDown ? 0.16 : 0.06);
+      // ジャイロの傾きと指ドラッグ視差を合成
+      const combinedTargetX = Math.max(-1.2, Math.min(1.2, gyroParallaxX + dragParallaxX));
+      const combinedTargetY = Math.max(-1.2, Math.min(1.2, gyroParallaxY + dragParallaxY));
 
-      // 微細な呼吸・空気揺らぎ（静止時もほんのり奥行き・生命感を作る）
+      smoothParallaxX += (combinedTargetX - smoothParallaxX) * (isPointerDown ? 0.16 : 0.08);
+      smoothParallaxY += (combinedTargetY - smoothParallaxY) * (isPointerDown ? 0.16 : 0.08);
+
+      // 微細な呼吸・空気揺らぎ（机に置いているときも生命感・奥行きを作る）
       const t = performance.now() * 0.0014;
       const breathRate = currentMotion === "sleep" ? 0.65 : 1.0;
       const breathScale = 1 + Math.sin(t * breathRate) * (currentMotion === "sleep" ? 0.012 : 0.008);
       const breathY = Math.cos(t * breathRate * 0.8) * 1.5;
-      const idleDriftX = Math.sin(t * 0.45) * 2.5;
+      const idleDriftX = Math.sin(t * 0.45) * 2.2;
 
       // 多層レイヤー：背景は逆方向へ、マロンと床影は少し手前方向へずらして奥行きを作る
-      const bgX = -(smoothParallaxX * 14 + idleDriftX * 0.6);
-      const bgY = -(smoothParallaxY * 8);
+      const bgX = -(smoothParallaxX * 16 + idleDriftX * 0.6);
+      const bgY = -(smoothParallaxY * 9);
 
-      const fgX = smoothParallaxX * 8 + idleDriftX;
-      const fgY = smoothParallaxY * 4 + breathY;
-      const fgTilt = smoothParallaxX * 2.2;
+      const fgX = smoothParallaxX * 9 + idleDriftX;
+      const fgY = smoothParallaxY * 4.5 + breathY;
+      const fgTilt = smoothParallaxX * 2.4;
 
-      const shadowX = smoothParallaxX * 6 + idleDriftX * 0.8;
+      const shadowX = smoothParallaxX * 6.5 + idleDriftX * 0.8;
       const shadowScale = 1 - Math.sin(t * breathRate) * 0.015;
 
-      roomImg.style.transform = `translate3d(${bgX.toFixed(1)}px, ${bgY.toFixed(1)}px, 0) scale(1.04)`;
+      roomImg.style.transform = `translate3d(${bgX.toFixed(1)}px, ${bgY.toFixed(1)}px, 0) scale(1.05)`;
       canvas.style.transform = `translate3d(calc(-50% + ${fgX.toFixed(1)}px), ${fgY.toFixed(1)}px, 0) scale(${breathScale.toFixed(4)}) rotate(${fgTilt.toFixed(2)}deg)`;
       floorShadow.style.transform = `translate3d(calc(-50% + ${shadowX.toFixed(1)}px), 0, 0) scale(${shadowScale.toFixed(4)})`;
 
       requestAnimationFrame(applyMultiLayerDepth);
     }
 
-    depthBtn.addEventListener("click", () => {
+    depthBtn.addEventListener("click", async () => {
       depthEnabled = !depthEnabled;
-      depthBtn.textContent = depthEnabled ? "✨ 奥行き視差: ON" : "✨ 奥行き視差: OFF";
+      depthBtn.textContent = depthEnabled ? "✨ 奥行き・ジャイロ: ON" : "✨ 奥行き・ジャイロ: OFF";
       depthBtn.classList.toggle("active", depthEnabled);
-      if (!depthEnabled) {
+      if (depthEnabled) {
+        gyroBaselineBeta = null;
+        gyroBaselineGamma = null;
+        await requestGyroPermissionIfNeeded();
+        showBubble("ジャイロ＆奥行き視差をONにしたよ！");
+      } else {
+        gyroParallaxX = 0;
+        gyroParallaxY = 0;
         dragParallaxX = 0;
         dragParallaxY = 0;
         smoothParallaxX = 0;
         smoothParallaxY = 0;
+        showBubble("奥行き・ジャイロをOFFにしたよ");
       }
-      showBubble(depthEnabled ? "指なで視差と呼吸揺らぎをONにしたよ" : "奥行き視差をOFFにしたよ");
     });
 
     // ---------------------------------------------------------
@@ -987,9 +1050,13 @@
       }
     });
 
-    // Web Audio API
+    // ---------------------------------------------------------
+    // Web Audio API（BGM ＋ 動画音声を同一ミキサーに統合しプツプツ音・途切れを防止）
+    // ---------------------------------------------------------
     let audioCtx = null;
     let bgmGainNode = null;
+    let videoGainNode = null;
+    let videoMediaSource = null;
     let bgmSourceNode = null;
     const bgmBufferCache = {};
     let bgmLoadToken = 0;
@@ -998,9 +1065,19 @@
       if (!audioCtx) {
         const AudioContextClass = window.AudioContext || window.webkitAudioContext;
         audioCtx = new AudioContextClass();
+
         bgmGainNode = audioCtx.createGain();
         bgmGainNode.gain.value = bgmEnabled ? 0.45 : 0;
         bgmGainNode.connect(audioCtx.destination);
+
+        // 動画の音声出力もWeb Audioパイプラインに統合（動画切り替え時のOSオーディオ再初期化・BGM途切れを防止）
+        try {
+          videoGainNode = audioCtx.createGain();
+          videoGainNode.gain.value = 0.9;
+          videoMediaSource = audioCtx.createMediaElementSource(video);
+          videoMediaSource.connect(videoGainNode);
+          videoGainNode.connect(audioCtx.destination);
+        } catch (e) {}
       }
       if (audioCtx.state === "suspended") {
         audioCtx.resume().catch(() => {});
@@ -1179,6 +1256,17 @@
       }
     }
 
+    // 動画切り替え時のフェードインでプツッというクリックノイズを防ぐ
+    function fadeInVideoAudio() {
+      if (!audioCtx || !videoGainNode) return;
+      try {
+        const now = audioCtx.currentTime;
+        videoGainNode.gain.cancelScheduledValues(now);
+        videoGainNode.gain.setValueAtTime(0.001, now);
+        videoGainNode.gain.linearRampToValueAtTime(0.9, now + 0.06);
+      } catch (e) {}
+    }
+
     // モーション切り替え
     function playMotion(motionKey, { customText = null, silentBubble = false, loopOverride = null } = {}) {
       const motion = ASSETS.motions[motionKey];
@@ -1199,9 +1287,9 @@
       canvas.classList.toggle("is-cushion", motionKey === "cushion");
       floorShadow.style.opacity = "1";
 
+      fadeInVideoAudio();
       video.loop = loopOverride !== null ? loopOverride : motion.loop;
       video.src = motion.src;
-      video.load();
       video.play().catch(() => {});
 
       if (!silentBubble) {
@@ -1261,6 +1349,9 @@
     canvas.addEventListener("pointerdown", (e) => {
       if (!isUnlocked) return;
       initAudioContext();
+      if (depthEnabled && !gyroListenerAttached) {
+        requestGyroPermissionIfNeeded();
+      }
       scheduleIdleChat();
       isPointerDown = true;
       strokeDistance = 0;
@@ -1371,7 +1462,7 @@
       playSlotBgm(asset.bgm);
 
       video.muted = false;
-      video.volume = 0.9;
+      video.volume = 1.0;
 
       if (slot === "midnight") {
         playMotion("sleep", { customText: "すやすや…もう夜遅いよ…Zzz" });

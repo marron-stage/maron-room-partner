@@ -143,7 +143,7 @@
       color: #ffab91;
     }
 
-    /* メインステージ（3D視差空間コンテナ） */
+    /* メインステージ（多層奥行きコンテナ） */
     .full-stage {
       position: relative;
       width: 100%;
@@ -181,7 +181,7 @@
       will-change: transform;
     }
 
-    /* マロン本体（9:16縦長動画用：65vh） */
+    /* マロン本体（9:16縦長動画用：70vh） */
     .marron-canvas {
       position: absolute;
       left: 60%;
@@ -499,7 +499,7 @@
       transform: translateX(-50%) scale(1);
     }
 
-    video#sourceVideo, video#headTrackVideo {
+    video#sourceVideo {
       display: none;
     }
   </style>
@@ -554,7 +554,7 @@
 
       <div class="top-controls">
         <button class="pill-btn treat-btn" id="treatBtn">🦴 おやつ</button>
-        <button class="pill-btn" id="parallaxBtn">👁️ 覗き込み3D: OFF</button>
+        <button class="pill-btn active" id="depthBtn">✨ 奥行き視差: ON</button>
         <button class="pill-btn active" id="bgmToggleBtn">🎵 BGM: ON</button>
         <button class="pill-btn" id="wakeBtn">☀️ 画面常時ON</button>
       </div>
@@ -597,7 +597,6 @@
   </div>
 
   <video id="sourceVideo" src="assets/marron_sit.mp4" autoplay loop playsinline></video>
-  <video id="headTrackVideo" autoplay playsinline muted></video>
 
   <script>
     const PASSCODE = "9648";
@@ -867,7 +866,7 @@
     const clockTime = document.getElementById("clockTime");
     const bubble = document.getElementById("bubble");
     const treatBtn = document.getElementById("treatBtn");
-    const parallaxBtn = document.getElementById("parallaxBtn");
+    const depthBtn = document.getElementById("depthBtn");
     const bgmToggleBtn = document.getElementById("bgmToggleBtn");
     const wakeBtn = document.getElementById("wakeBtn");
     const dockToggleBtn = document.getElementById("dockToggleBtn");
@@ -890,138 +889,79 @@
     let idleChatTimer = null;
 
     // ---------------------------------------------------------
-    // 覗き込み3D視差（インカメラ顔位置トラッキング ＋ フォールバック）
+    // 指ドラッグ視差 ＋ 多層レイヤー ＋ 微細な呼吸揺らぎ
+    // （カメラ・ジャイロは使用しない）
     // ---------------------------------------------------------
-    let parallaxEnabled = false;
-    let headStream = null;
-    let headTrackRaf = null;
-    const headVideo = document.getElementById("headTrackVideo");
-    const trackCanvas = document.createElement("canvas");
-    trackCanvas.width = 64;
-    trackCanvas.height = 48;
-    const trackCtx = trackCanvas.getContext("2d", { willReadFrequently: true });
+    let depthEnabled = true;
+    let dragParallaxX = 0; // -1..1
+    let dragParallaxY = 0; // -1..1
+    let smoothParallaxX = 0;
+    let smoothParallaxY = 0;
 
-    let targetLookX = 0; // -1（左から覗く）〜 +1（右から覗く）
-    let targetLookY = 0; // -1（上から）〜 +1（下から）
-    let smoothLookX = 0;
-    let smoothLookY = 0;
-    let hasCameraTrack = false;
-
-    async function toggleHeadParallax() {
-      parallaxEnabled = !parallaxEnabled;
-      if (parallaxEnabled) {
-        parallaxBtn.textContent = "👁️ 覗き込み3D: ON";
-        parallaxBtn.classList.add("active");
-        try {
-          headStream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: "user", width: 160, height: 120 },
-            audio: false
-          });
-          headVideo.srcObject = headStream;
-          await headVideo.play();
-          hasCameraTrack = true;
-          showBubble("顔を左右に動かして覗き込むと立体的に見えるよ！");
-        } catch (err) {
-          hasCameraTrack = false;
-          showBubble("カメラなしでも緩やかな3D視差をONにしたよ！");
-        }
-        startParallaxLoop();
-      } else {
-        parallaxBtn.textContent = "👁️ 覗き込み3D: OFF";
-        parallaxBtn.classList.remove("active");
-        stopHeadParallax();
-        showBubble("覗き込み3DをOFFにしたよ");
-      }
+    function updateDragParallaxFromPointer(clientX, clientY) {
+      if (!depthEnabled) return;
+      const rect = stage.getBoundingClientRect();
+      const nx = ((clientX - rect.left) / Math.max(rect.width, 1)) * 2 - 1;
+      const ny = ((clientY - rect.top) / Math.max(rect.height, 1)) * 2 - 1;
+      dragParallaxX = Math.max(-1, Math.min(1, nx));
+      dragParallaxY = Math.max(-1, Math.min(1, ny));
     }
 
-    function stopHeadParallax() {
-      if (headTrackRaf) {
-        cancelAnimationFrame(headTrackRaf);
-        headTrackRaf = null;
-      }
-      if (headStream) {
-        headStream.getTracks().forEach((t) => t.stop());
-        headStream = null;
-      }
-      hasCameraTrack = false;
-      targetLookX = 0;
-      targetLookY = 0;
-      smoothLookX = 0;
-      smoothLookY = 0;
-      roomImg.style.transform = "";
-      canvas.style.transform = "translateX(-50%)";
-      floorShadow.style.transform = "translateX(-50%)";
+    function resetDragParallax() {
+      dragParallaxX = 0;
+      dragParallaxY = 0;
     }
 
-    function detectFaceCentroid() {
-      if (!hasCameraTrack || headVideo.readyState < 2) return;
-      trackCtx.drawImage(headVideo, 0, 0, 64, 48);
-      const pixels = trackCtx.getImageData(0, 0, 64, 48).data;
-
-      let sumX = 0;
-      let sumY = 0;
-      let count = 0;
-
-      // 肌色領域の重心を高速サンプリングして顔の位置を推定
-      for (let y = 4; y < 44; y++) {
-        for (let x = 4; x < 60; x++) {
-          const i = (y * 64 + x) * 4;
-          const r = pixels[i];
-          const g = pixels[i + 1];
-          const b = pixels[i + 2];
-          if (r > 85 && g > 40 && b > 25 && r > g && r > b && (r - g) > 12) {
-            sumX += x;
-            sumY += y;
-            count++;
-          }
-        }
+    function applyMultiLayerDepth() {
+      if (!depthEnabled) {
+        roomImg.style.transform = "";
+        canvas.style.transform = "translateX(-50%)";
+        floorShadow.style.transform = "translateX(-50%)";
+        requestAnimationFrame(applyMultiLayerDepth);
+        return;
       }
 
-      if (count > 25) {
-        const cx = sumX / count; // 0..64
-        const cy = sumY / count; // 0..48
-        // インカメラは鏡像なので左右反転して自然な視差方向にする
-        targetLookX = Math.max(-1, Math.min(1, -((cx - 32) / 18)));
-        targetLookY = Math.max(-1, Math.min(1, (cy - 24) / 16));
-      }
+      // 指を離したらゆっくり中央へ戻し、触っている間は指位置へ滑らかに追従
+      smoothParallaxX += (dragParallaxX - smoothParallaxX) * (isPointerDown ? 0.16 : 0.06);
+      smoothParallaxY += (dragParallaxY - smoothParallaxY) * (isPointerDown ? 0.16 : 0.06);
+
+      // 微細な呼吸・空気揺らぎ（静止時もほんのり奥行き・生命感を作る）
+      const t = performance.now() * 0.0014;
+      const breathRate = currentMotion === "sleep" ? 0.65 : 1.0;
+      const breathScale = 1 + Math.sin(t * breathRate) * (currentMotion === "sleep" ? 0.012 : 0.008);
+      const breathY = Math.cos(t * breathRate * 0.8) * 1.5;
+      const idleDriftX = Math.sin(t * 0.45) * 2.5;
+
+      // 多層レイヤー：背景は逆方向へ、マロンと床影は少し手前方向へずらして奥行きを作る
+      const bgX = -(smoothParallaxX * 14 + idleDriftX * 0.6);
+      const bgY = -(smoothParallaxY * 8);
+
+      const fgX = smoothParallaxX * 8 + idleDriftX;
+      const fgY = smoothParallaxY * 4 + breathY;
+      const fgTilt = smoothParallaxX * 2.2;
+
+      const shadowX = smoothParallaxX * 6 + idleDriftX * 0.8;
+      const shadowScale = 1 - Math.sin(t * breathRate) * 0.015;
+
+      roomImg.style.transform = `translate3d(${bgX.toFixed(1)}px, ${bgY.toFixed(1)}px, 0) scale(1.04)`;
+      canvas.style.transform = `translate3d(calc(-50% + ${fgX.toFixed(1)}px), ${fgY.toFixed(1)}px, 0) scale(${breathScale.toFixed(4)}) rotate(${fgTilt.toFixed(2)}deg)`;
+      floorShadow.style.transform = `translate3d(calc(-50% + ${shadowX.toFixed(1)}px), 0, 0) scale(${shadowScale.toFixed(4)})`;
+
+      requestAnimationFrame(applyMultiLayerDepth);
     }
 
-    function startParallaxLoop() {
-      let frameTick = 0;
-      function tick() {
-        if (!parallaxEnabled) return;
-        frameTick++;
-
-        if (hasCameraTrack) {
-          if (frameTick % 2 === 0) detectFaceCentroid();
-        } else {
-          // カメラ未許可時はゆったりした自動の立体揺らぎ
-          const t = performance.now() * 0.0012;
-          targetLookX = Math.sin(t) * 0.45;
-          targetLookY = Math.cos(t * 0.8) * 0.25;
-        }
-
-        // スムージングで酔いにくい滑らかな視差移動
-        smoothLookX += (targetLookX - smoothLookX) * 0.12;
-        smoothLookY += (targetLookY - smoothLookY) * 0.12;
-
-        // 奥の部屋背景は逆方向へ大きく動き、手前のマロンは少し手前側へ動くことで奥行き視差を作る
-        const bgX = -smoothLookX * 26;
-        const bgY = -smoothLookY * 14;
-        const fgX = smoothLookX * 14;
-        const fgY = smoothLookY * 6;
-        const rotY = smoothLookX * 4.5;
-
-        roomImg.style.transform = `translate3d(${bgX.toFixed(1)}px, ${bgY.toFixed(1)}px, 0) scale(1.06)`;
-        canvas.style.transform = `translate3d(calc(-50% + ${fgX.toFixed(1)}px), ${fgY.toFixed(1)}px, 24px) rotateY(${rotY.toFixed(2)}deg)`;
-        floorShadow.style.transform = `translate3d(calc(-50% + ${(fgX * 0.85).toFixed(1)}px), ${(fgY * 0.6).toFixed(1)}px, 0)`;
-
-        headTrackRaf = requestAnimationFrame(tick);
+    depthBtn.addEventListener("click", () => {
+      depthEnabled = !depthEnabled;
+      depthBtn.textContent = depthEnabled ? "✨ 奥行き視差: ON" : "✨ 奥行き視差: OFF";
+      depthBtn.classList.toggle("active", depthEnabled);
+      if (!depthEnabled) {
+        dragParallaxX = 0;
+        dragParallaxY = 0;
+        smoothParallaxX = 0;
+        smoothParallaxY = 0;
       }
-      headTrackRaf = requestAnimationFrame(tick);
-    }
-
-    parallaxBtn.addEventListener("click", toggleHeadParallax);
+      showBubble(depthEnabled ? "指なで視差と呼吸揺らぎをONにしたよ" : "奥行き視差をOFFにしたよ");
+    });
 
     // ---------------------------------------------------------
     // 操作ドックのトグル開閉 & プルダウン選択
@@ -1310,7 +1250,7 @@
       }, nextDelay);
     }
 
-    // 直接指でなでなで
+    // 直接指でなでなで ＋ 指ドラッグ視差
     let isPointerDown = false;
     let strokeDistance = 0;
     let lastPos = null;
@@ -1326,6 +1266,7 @@
       strokeDistance = 0;
       petTriggeredInStroke = false;
       lastPos = { x: e.clientX, y: e.clientY };
+      updateDragParallaxFromPointer(e.clientX, e.clientY);
       canvas.setPointerCapture(e.pointerId);
     });
 
@@ -1336,6 +1277,7 @@
       const step = Math.hypot(dx, dy);
       strokeDistance += step;
       lastPos = { x: e.clientX, y: e.clientY };
+      updateDragParallaxFromPointer(e.clientX, e.clientY);
 
       const now = Date.now();
 
@@ -1385,6 +1327,7 @@
       isPointerDown = false;
       petTriggeredInStroke = false;
       lastPos = null;
+      resetDragParallax();
     }
 
     canvas.addEventListener("pointerup", endPointerStroke);
@@ -1486,6 +1429,7 @@
     video.muted = true;
     video.play().catch(() => {});
     renderChromaKey();
+    applyMultiLayerDepth();
   </script>
 </body>
 </html>

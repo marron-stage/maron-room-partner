@@ -734,7 +734,7 @@
       <div class="api-card-desc">
         Google AI Studio で作成したAPIキーを貼り付けてください。このiPadのブラウザ内（localStorage）だけに保存されます。
       </div>
-      <input type="password" class="api-input" id="apiKeyInput" placeholder="AQ... または AIza..." autocomplete="off" />
+      <input type="password" class="api-input" id="apiKeyInput" placeholder="APIキーを入力..." autocomplete="off" />
       <div class="api-actions">
         <button class="pill-btn" id="apiClearBtn">削除</button>
         <button class="pill-btn" id="apiCancelBtn">閉じる</button>
@@ -748,7 +748,7 @@
   <script>
     const PASSCODE = "9648";
     const GEMINI_API_KEY_STORAGE = "marron_gemini_api_key_v1";
-    const DEFAULT_GEMINI_MODEL = "gemini-2.0-flash";
+    const GEMINI_MODEL_NAME = "gemini-2.0-flash";
 
     const ASSETS = {
       slots: {
@@ -1341,10 +1341,8 @@
     }
 
     // ---------------------------------------------------------
-    // Gemini おしゃべりプロトタイプ（AQ. / AIza キー両対応 ＋ モデル自動検出）
+    // Gemini おしゃべりプロトタイプ（gemini-2.0-flash 固定）
     // ---------------------------------------------------------
-    let cachedGeminiModelName = "";
-
     function getSavedApiKey() {
       try {
         return (localStorage.getItem(GEMINI_API_KEY_STORAGE) || "").trim();
@@ -1354,7 +1352,6 @@
     }
 
     function setSavedApiKey(key) {
-      cachedGeminiModelName = "";
       try {
         if (key && key.trim()) {
           localStorage.setItem(GEMINI_API_KEY_STORAGE, key.trim());
@@ -1487,33 +1484,6 @@
       }
     });
 
-    // 利用可能なGeminiモデルを自動検出して404を防ぐ
-    async function resolveAvailableGeminiModel(apiKey) {
-      if (cachedGeminiModelName) return cachedGeminiModelName;
-      try {
-        const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`;
-        const res = await fetch(listUrl);
-        if (!res.ok) return DEFAULT_GEMINI_MODEL;
-        const data = await res.json();
-        const models = Array.isArray(data.models) ? data.models : [];
-        const supported = models
-          .filter((m) => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes("generateContent"))
-          .map((m) => String(m.name || "").replace(/^models\//, ""));
-
-        const preferred =
-          supported.find((n) => n.includes("flash") && n.includes("2.5")) ||
-          supported.find((n) => n.includes("flash") && n.includes("2.0")) ||
-          supported.find((n) => n.includes("flash")) ||
-          supported[0] ||
-          DEFAULT_GEMINI_MODEL;
-
-        cachedGeminiModelName = preferred;
-        return preferred;
-      } catch (e) {
-        return DEFAULT_GEMINI_MODEL;
-      }
-    }
-
     async function talkWithMarronGemini(userText) {
       if (!isUnlocked) return;
       initAudioContext();
@@ -1540,8 +1510,7 @@
       const promptText = `現在の時間帯は「${slotLabel}」です。飼い主さんが「${userText}」と話しかけました。`;
 
       try {
-        const modelName = await resolveAvailableGeminiModel(apiKey);
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL_NAME)}:generateContent?key=${encodeURIComponent(apiKey)}`;
         const response = await fetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -1557,7 +1526,6 @@
         });
 
         if (!response.ok) {
-          cachedGeminiModelName = "";
           throw new Error(`HTTP ${response.status}`);
         }
 

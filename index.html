@@ -1341,7 +1341,7 @@
     }
 
     // ---------------------------------------------------------
-    // Gemini おしゃべりプロトタイプ（gemini-2.0-flash 固定）
+    // Gemini おしゃべりプロトタイプ（gemini-3.8-flash 高速化調整版）
     // ---------------------------------------------------------
     function getSavedApiKey() {
       try {
@@ -1497,17 +1497,14 @@
       }
 
       clearTimeout(randomMotionTimer);
-      showBubble("…（お耳をぴこんと立てて考え中）", 5000);
+      showBubble("…（お耳ぴこん）", 4000);
 
       const slotLabel = (ASSETS.slots[currentSlot] && ASSETS.slots[currentSlot].label) || "昼";
-      const systemInstruction = [
-        "あなたは二頭身の黒柴の子犬キャラクター「マロン」です。",
-        "飼い主さんの言葉に、優しく人懐っこく、少し甘えん坊な子犬らしい短い日本語（全角45文字以内目安）で返事をしてください。",
-        "「ワン」「〜だワン」「クゥン」などの犬らしいニュアンスを自然に混ぜつつ、丁寧すぎず温かみのある口調にしてください。",
-        "出力は必ずJSON形式のみで返してください: {\"reply\":\"吹き出しに表示する短い返事\",\"motion\":\"bark|sweet|beg|trick|hop\"}"
-      ].join("\n");
+      const systemInstruction =
+        "二頭身の黒柴の子犬マロン。優しく人懐っこく、全角30文字以内の短い日本語で返事。" +
+        "JSONのみで出力: {\"reply\":\"短い返事\",\"motion\":\"bark|sweet|beg|trick|hop\"}";
 
-      const promptText = `現在の時間帯は「${slotLabel}」です。飼い主さんが「${userText}」と話しかけました。`;
+      const promptText = `時間帯:${slotLabel} / 話しかけ:${userText}`;
 
       try {
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL_NAME)}:generateContent?key=${encodeURIComponent(apiKey)}`;
@@ -1518,8 +1515,9 @@
             system_instruction: { parts: [{ text: systemInstruction }] },
             contents: [{ role: "user", parts: [{ text: promptText }] }],
             generationConfig: {
-              temperature: 0.85,
-              maxOutputTokens: 160,
+              temperature: 0.7,
+              maxOutputTokens: 80,
+              thinkingConfig: { thinkingBudget: 0 },
               responseMimeType: "application/json"
             }
           })
@@ -1537,14 +1535,14 @@
 
         try {
           const parsed = JSON.parse(rawText);
-          if (parsed.reply) replyText = String(parsed.reply).slice(0, 80);
+          if (parsed.reply) replyText = String(parsed.reply).slice(0, 60);
           const allowed = ["bark", "sweet", "beg", "trick", "hop"];
           if (parsed.motion && allowed.includes(parsed.motion)) {
             chosenMotion = parsed.motion;
           }
         } catch (parseErr) {
           if (rawText.trim()) {
-            replyText = rawText.trim().slice(0, 70);
+            replyText = rawText.trim().slice(0, 60);
           }
         }
 
@@ -1552,7 +1550,7 @@
         playMotion(chosenMotion, { customText: replyText });
       } catch (err) {
         console.warn("Gemini通信エラー:", err);
-        playMotion("sweet", { customText: "クゥ〜ン…うまくお返事できなかったワン…APIキーを確認してみてね" });
+        playMotion("sweet", { customText: "クゥ〜ン…うまくお返事できなかったワン…" });
       }
     }
 
